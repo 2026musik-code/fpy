@@ -12,7 +12,15 @@ interface AdminData {
 export function Admin() {
   const [data, setData] = useState<AdminData | null>(null);
   const [activeTab, setActiveTab] = useState('users');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [loginError, setLoginError] = useState('');
+
+  // Password change states
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [changePasswordMsg, setChangePasswordMsg] = useState('');
 
   // States for forms
   const [popupText, setPopupText] = useState('');
@@ -25,8 +33,57 @@ export function Admin() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (isAuthenticated) {
+      fetchData();
+    }
+  }, [isAuthenticated]);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/verify-password', {
+        method: 'POST',
+        body: JSON.stringify({ password: passwordInput })
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success) {
+          setIsAuthenticated(true);
+          setLoginError('');
+        } else {
+          setLoginError('Password salah');
+        }
+      } else {
+        setLoginError('Password salah');
+      }
+    } catch {
+      setLoginError('Terjadi kesalahan');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setChangePasswordMsg('');
+    try {
+      const res = await fetch('/api/admin/change-password', {
+        method: 'POST',
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+      const json = await res.json();
+      if (json.success) {
+        setChangePasswordMsg('Password berhasil diubah!');
+        setCurrentPassword('');
+        setNewPassword('');
+      } else {
+        setChangePasswordMsg(json.error || 'Gagal mengubah password');
+      }
+    } catch {
+      setChangePasswordMsg('Terjadi kesalahan');
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -123,7 +180,44 @@ export function Admin() {
     }
   };
 
-  if (loading) {
+  if (!isAuthenticated) {
+    return (
+      <main className="min-h-screen pt-20 md:pt-32 pb-24 px-4 flex items-center justify-center">
+        <div className="bg-zinc-900 border border-white/10 rounded-2xl p-6 md:p-8 max-w-md w-full shadow-2xl">
+          <div className="flex flex-col items-center mb-8">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-rose-600 to-indigo-600 flex items-center justify-center shadow-lg mb-4">
+              <ShieldCheck className="w-8 h-8 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold">Admin Login</h2>
+            <p className="text-zinc-500 text-sm mt-1">Masukkan password admin untuk melanjutkan</p>
+          </div>
+          
+          <form onSubmit={handleLogin} className="flex flex-col gap-4">
+            <div>
+              <input 
+                type="password" 
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                placeholder="Password Administator" 
+                className="w-full bg-black border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-rose-500 transition-colors"
+                required
+              />
+            </div>
+            {loginError && <p className="text-rose-500 text-sm font-medium">{loginError}</p>}
+            <button 
+              type="submit" 
+              disabled={loading}
+              className="bg-white text-black font-bold rounded-xl py-3 mt-2 hover:bg-zinc-200 transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Sedang Masuk...' : 'Masuk'}
+            </button>
+          </form>
+        </div>
+      </main>
+    );
+  }
+
+  if (loading && !data) {
     return <div className="text-center pt-32 text-zinc-500">Loading admin data...</div>;
   }
 
@@ -149,6 +243,7 @@ export function Admin() {
           <MenuButton active={activeTab === 'upgrade'} onClick={() => setActiveTab('upgrade')} icon={<Settings className="w-4 h-4" />} label="Upgrade Info" />
           <MenuButton active={activeTab === 'traffic'} onClick={() => setActiveTab('traffic')} icon={<Activity className="w-4 h-4" />} label="Traffic" />
           <MenuButton active={activeTab === 'contact'} onClick={() => setActiveTab('contact')} icon={<MessageCircle className="w-4 h-4" />} label="Contact" />
+          <MenuButton active={activeTab === 'security'} onClick={() => setActiveTab('security')} icon={<ShieldCheck className="w-4 h-4" />} label="Security" />
         </nav>
       </div>
 
@@ -369,6 +464,46 @@ export function Admin() {
                 <Save className="w-4 h-4" /> Save Contacts
               </button>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'security' && (
+          <div className="space-y-4 animate-in fade-in duration-300">
+            <h3 className="text-lg font-bold mb-1">Security Settings</h3>
+            <p className="text-zinc-500 text-xs mb-4">Ganti password admin panel</p>
+
+            <form onSubmit={handleChangePassword} className="space-y-4 max-w-sm">
+              <div>
+                <label className="block text-xs font-semibold text-zinc-400 mb-1.5 uppercase tracking-wider">Password Lama</label>
+                <input 
+                  type="password"
+                  value={currentPassword}
+                  onChange={e => setCurrentPassword(e.target.value)}
+                  className="w-full bg-black/50 border border-white/5 rounded-xl px-4 py-2.5 outline-none focus:border-rose-500/50 transition-colors"
+                  placeholder="Masukkan password saat ini"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-zinc-400 mb-1.5 uppercase tracking-wider">Password Baru</label>
+                <input 
+                  type="password"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  className="w-full bg-black/50 border border-white/5 rounded-xl px-4 py-2.5 outline-none focus:border-rose-500/50 transition-colors"
+                  placeholder="Masukkan password baru"
+                  required
+                />
+              </div>
+              {changePasswordMsg && (
+                <p className={`text-sm font-medium ${changePasswordMsg.includes('berhasil') ? 'text-emerald-500' : 'text-rose-500'}`}>
+                  {changePasswordMsg}
+                </p>
+              )}
+              <button type="submit" className="flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-500 text-white w-full py-2.5 rounded-xl text-sm font-semibold transition-colors mt-2">
+                <Save className="w-4 h-4" /> Update Password
+              </button>
+            </form>
           </div>
         )}
       </div>

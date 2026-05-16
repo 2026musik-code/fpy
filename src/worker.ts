@@ -31,7 +31,8 @@ let localAdminData = {
     description: 'Upgrade ke VIP untuk akses tanpa batas tayangan premium',
     price: 'Rp 50.000 / Bulan',
     limit: 'Unlimited'
-  }
+  },
+  adminPassword: 'admin'
 };
 
 const getAdminData = async (c: any) => {
@@ -98,6 +99,26 @@ app.post('/api/admin/update-upgrade', async (c) => {
   data.upgrade = { ...data.upgrade, ...body };
   await saveAdminData(c, data);
   return c.json({ success: true, upgrade: data.upgrade });
+});
+
+app.post('/api/admin/verify-password', async (c) => {
+  const body = await c.req.json();
+  const data = await getAdminData(c);
+  if (body.password === data.adminPassword) {
+    return c.json({ success: true });
+  }
+  return c.json({ success: false }, 401);
+});
+
+app.post('/api/admin/change-password', async (c) => {
+  const body = await c.req.json();
+  const data = await getAdminData(c);
+  if (body.currentPassword === data.adminPassword) {
+    data.adminPassword = body.newPassword;
+    await saveAdminData(c, data);
+    return c.json({ success: true });
+  }
+  return c.json({ success: false, error: 'Incorrect current password' }, 401);
 });
 
 app.post('/api/admin/update-user-limit', async (c) => {

@@ -118,10 +118,7 @@ export function Profile() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between mt-4">
-        <a href="/admin" className="flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-semibold text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors">
-          <Shield className="w-4 h-4" /> Masuk Admin
-        </a>
+      <div className="flex items-center justify-end mt-4">
         <button className="flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-semibold text-rose-500 hover:text-white hover:bg-rose-500 transition-colors">
           <LogOut className="w-4 h-4" /> Sign Out
         </button>

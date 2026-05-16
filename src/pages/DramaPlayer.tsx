@@ -495,7 +495,13 @@ function VideoItem({ episode, isActive, isAdjacent, onEnded }: { key?: string | 
       {/* Limit Popup Overlay */}
       {limitData && isActive && (
         <div className="absolute inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="bg-zinc-900 border border-white/10 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95 duration-300">
+          <div className="relative bg-zinc-900 border border-white/10 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95 duration-300">
+            <button 
+              onClick={() => setLimitData(null)} 
+              className="absolute top-3 right-3 text-zinc-400 hover:text-white bg-black/50 p-1.5 rounded-full backdrop-blur-md transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
             {limitData.popup?.image && (
               <img src={limitData.popup.image} alt="Banner" className="w-full h-32 object-cover rounded-xl mb-4" />
             )}

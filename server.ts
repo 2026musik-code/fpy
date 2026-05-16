@@ -29,7 +29,8 @@ let adminData = {
     description: 'Upgrade ke VIP untuk akses tanpa batas tayangan premium',
     price: 'Rp 50.000 / Bulan',
     limit: 'Unlimited'
-  }
+  },
+  adminPassword: 'admin'
 };
 
 // Get or create user based on IP and User-Agent
@@ -89,6 +90,23 @@ async function startServer() {
       contacts: adminData.contact,
       upgrade: adminData.upgrade
     });
+  });
+
+  app.post("/api/admin/verify-password", (req, res) => {
+    if (req.body.password === adminData.adminPassword) {
+      res.json({ success: true });
+    } else {
+      res.status(401).json({ success: false });
+    }
+  });
+
+  app.post("/api/admin/change-password", (req, res) => {
+    if (req.body.currentPassword === adminData.adminPassword) {
+      adminData.adminPassword = req.body.newPassword;
+      res.json({ success: true });
+    } else {
+      res.status(401).json({ success: false, error: 'Incorrect current password' });
+    }
   });
 
   app.post("/api/admin/update-user-limit", (req, res) => {
