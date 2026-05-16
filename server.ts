@@ -154,6 +154,30 @@ async function startServer() {
     }
   });
 
+  app.post("/api/payment/callback", (req, res) => {
+    try {
+      const body = req.body;
+      const status = body.status || body.data?.status;
+      if (status === 'PAID' || status === 'SUCCESS' || status === 'success' || status === 'settlement') {
+        const reference_id = body.reference_id || body.data?.reference_id;
+        if (reference_id) {
+          const parts = reference_id.split('-');
+          if (parts.length >= 3) {
+            const userId = parts.slice(2).join('-');
+            const user = adminData.users.find(u => u.id === userId);
+            if (user) {
+              user.type = 'VIP';
+              user.limit = 999999;
+            }
+          }
+        }
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ success: false });
+    }
+  });
+
   app.post("/api/admin/update-user-limit", (req, res) => {
     const { id, limit } = req.body;
     const user = adminData.users.find(u => u.id === id);

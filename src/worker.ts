@@ -176,6 +176,32 @@ app.post('/api/user/checkout', async (c) => {
   }
 });
 
+app.post('/api/payment/callback', async (c) => {
+  try {
+    const body = await c.req.json();
+    const status = body.status || body.data?.status;
+    if (status === 'PAID' || status === 'SUCCESS' || status === 'success' || status === 'settlement') {
+      const reference_id = body.reference_id || body.data?.reference_id;
+      if (reference_id) {
+        const parts = reference_id.split('-');
+        if (parts.length >= 3) {
+          const userId = parts.slice(2).join('-');
+          const data = await getAdminData(c);
+          const user = data.users.find((u: any) => u.id === userId);
+          if (user) {
+            user.type = 'VIP';
+            user.limit = 999999;
+            await saveAdminData(c, data);
+          }
+        }
+      }
+    }
+    return c.json({ success: true });
+  } catch (error) {
+    return c.json({ success: false }, 500);
+  }
+});
+
 app.post('/api/admin/update-user-limit', async (c) => {
   const body = await c.req.json();
   const data = await getAdminData(c);
