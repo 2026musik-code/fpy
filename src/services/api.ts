@@ -113,11 +113,14 @@ export const fypApi = {
     
     const origin = json.data?.headers?.Referer || json.data?.headers?.Origin || "";
     
+    // Gunakan Cloudflare worker untuk proxy agar streaming cepat (Singapura/Jakarta)
+    const PROXY_BASE = "https://fypshort.ahem7553.workers.dev";
+    
     // Proxy m3u8 streams to bypass CORS
     if (url && (url.includes('.m3u8') || url.includes('.m3u'))) {
-      url = `/api/proxy/m3u8?url=${encodeURIComponent(url)}${origin ? '&origin=' + encodeURIComponent(origin) : ''}`;
+      url = `${PROXY_BASE}/api/proxy/m3u8?url=${encodeURIComponent(url)}${origin ? '&origin=' + encodeURIComponent(origin) : ''}`;
     } else if (url && origin) {
-      url = `/api/proxy/ts?url=${encodeURIComponent(url)}&origin=${encodeURIComponent(origin)}`;
+      url = `${PROXY_BASE}/api/proxy/ts?url=${encodeURIComponent(url)}&origin=${encodeURIComponent(origin)}`;
     }
     
     // Extract Indonesian subtitles specifically (or mapping all if needed)
@@ -126,7 +129,7 @@ export const fypApi = {
     
     if (indonesianSub) {
       // proxy and convert to vtt
-      indonesianSub.url = `/api/proxy/sub?url=${encodeURIComponent(indonesianSub.url)}${origin ? '&origin=' + encodeURIComponent(origin) : ''}`;
+      indonesianSub.url = `${PROXY_BASE}/api/proxy/sub?url=${encodeURIComponent(indonesianSub.url)}${origin ? '&origin=' + encodeURIComponent(origin) : ''}`;
     }
     
     return {
