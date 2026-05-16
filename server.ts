@@ -139,7 +139,7 @@ async function startServer() {
       
       if (response.ok) {
         const responseData = await response.json();
-        const paymentUrl = responseData.data?.checkout_url || responseData.checkout_url || responseData.payment_url || '';
+        const paymentUrl = responseData.data?.pay_url || responseData.data?.checkout_url || responseData.checkout_url || responseData.payment_url || '';
         if (!paymentUrl) {
           res.status(500).json({ success: false, error: `Response OK, tapi tidak ada url pembayaran. Response API: ${JSON.stringify(responseData)}` });
         } else {

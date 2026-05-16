@@ -163,7 +163,7 @@ app.post('/api/user/checkout', async (c) => {
     
     if (res.ok) {
       const responseData = await res.json();
-      const paymentUrl = responseData.data?.checkout_url || responseData.checkout_url || responseData.payment_url || '';
+      const paymentUrl = responseData.data?.pay_url || responseData.data?.checkout_url || responseData.checkout_url || responseData.payment_url || '';
       if (!paymentUrl) {
          return c.json({ success: false, error: `Response OK, tapi tidak ada url pembayaran. Response API: ${JSON.stringify(responseData)}` }, 500);
       }
