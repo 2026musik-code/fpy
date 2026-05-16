@@ -4,11 +4,35 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="referrer" content="no-referrer" />
-    <title>My Google AI Studio App</title>
+    <title>Stream App</title>
   </head>
-  <body>
+  <body class="bg-black text-white" oncontextmenu="return false">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Anti Inspect Element & DevTools
+      document.addEventListener('keydown', function(e) {
+        if (
+          e.key === 'F12' || 
+          (e.ctrlKey && e.shiftKey && e.key === 'I') || 
+          (e.ctrlKey && e.shiftKey && e.key === 'C') ||
+          (e.ctrlKey && e.shiftKey && e.key === 'J') || 
+          (e.ctrlKey && e.key === 'U') ||
+          (e.metaKey && e.altKey && e.key === 'I') ||
+          (e.metaKey && e.altKey && e.key === 'U')
+        ) {
+          e.preventDefault();
+        }
+      });
+      // Disable right click
+      document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+      });
+      // Disable drag
+      document.addEventListener('dragstart', function(e) {
+        e.preventDefault();
+      });
+    </script>
   </body>
 </html>
 

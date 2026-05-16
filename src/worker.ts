@@ -8,6 +8,24 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>();
 
+// Security Middleware to block common scrapers and bots
+app.use('*', async (c, next) => {
+  const userAgent = c.req.header('user-agent')?.toLowerCase() || '';
+  
+  // Block known bots/scrapers
+  const blockedAgents = [
+    'curl', 'wget', 'python', 'go-http', 'postman', 'insomnia', 
+    'scrapy', 'java', 'ruby', 'php', 'okhttp', 'node-fetch', 'axios'
+  ];
+  
+  if (!userAgent || blockedAgents.some(agent => userAgent.includes(agent))) {
+    return c.json({ error: 'Access Denied', message: 'Unauthorized client' }, 403);
+  }
+  
+  // Allow request to proceed
+  await next();
+});
+
 // In-memory data fallback for local development or when KV is not configured
 let localAdminData = {
   popup: {
@@ -35,6 +53,27 @@ let localAdminData = {
   adminPassword: 'admin',
   paymentApiKey: ''
 };
+
+// Admin Auth Middleware
+app.use('/api/admin/*', async (c, next) => {
+  if (c.req.path === '/api/admin/verify-password') return next();
+  
+  const providedPass = c.req.header('x-admin-password');
+  const data = await getAdminData(c);
+  
+  if (providedPass !== data.adminPassword) {
+    // some endpoints might pass password in body like change-password but we changed frontend to pass header for all
+    // Just in case, change-password receives body
+    if (c.req.path === '/api/admin/change-password') {
+      try {
+        const bodyObj = await c.req.clone().json().catch(() => ({}));
+        if (bodyObj.currentPassword === data.adminPassword) return next();
+      } catch (e) {}
+    }
+    return c.json({ error: 'Unauthorized', message: 'Invalid admin credentials' }, 401);
+  }
+  await next();
+});
 
 const getAdminData = async (c: any) => {
   if (c.env?.diana) {

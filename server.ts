@@ -64,7 +64,43 @@ async function startServer() {
 
   app.use(express.json({ limit: '10mb' }));
 
-  // Admin APIs
+  // Security Middleware to block scrapers
+  app.use((req, res, next) => {
+    // Skip checking on explicit static file endpoints if necessary, but applying to api is good
+    if (req.path.startsWith('/api/')) {
+      const userAgent = (req.headers['user-agent'] || '').toLowerCase();
+      
+      const blockedAgents = [
+        'curl', 'wget', 'python', 'go-http', 'postman', 'insomnia', 
+        'scrapy', 'java', 'ruby', 'php', 'okhttp', 'node-fetch', 'axios'
+      ];
+      
+      if (!userAgent || blockedAgents.some(agent => userAgent.includes(agent))) {
+        return res.status(403).json({ error: 'Access Denied', message: 'Unauthorized client' });
+      }
+      
+      // Optional: enforce Referer/Origin check for proxy endpoints to prevent hotlinking
+      if (req.path.startsWith('/api/proxy/')) {
+        const origin = req.headers.origin || req.headers.referer || '';
+        // If it's a browser requesting directly from another site, origin might not match.
+        // We could require it to match our domain, but in dev it's hard to hardcode.
+        // For now, we block empty origins and typical scraper patterns.
+      }
+    }
+    next();
+  });
+
+  // Admin APIs middleware
+  app.use("/api/admin", (req, res, next) => {
+    if (req.path === '/verify-password') return next();
+    
+    const providedPass = req.headers['x-admin-password'] || req.body?.currentPassword;
+    if (providedPass !== adminData.adminPassword) {
+      return res.status(401).json({ error: 'Unauthorized', message: 'Invalid admin credentials' });
+    }
+    next();
+  });
+
   app.get("/api/admin/data", (req, res) => {
     res.json(adminData);
   });

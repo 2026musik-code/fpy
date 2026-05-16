@@ -52,6 +52,7 @@ export function Admin() {
       if (res.ok) {
         const json = await res.json();
         if (json.success) {
+          sessionStorage.setItem('adminToken', passwordInput);
           setIsAuthenticated(true);
           setLoginError('');
         } else {
@@ -73,7 +74,10 @@ export function Admin() {
     try {
       const res = await fetch('/api/admin/change-password', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-admin-password': sessionStorage.getItem('adminToken') || ''
+        },
         body: JSON.stringify({ currentPassword, newPassword })
       });
       const json = await res.json();
@@ -92,7 +96,11 @@ export function Admin() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/data');
+      const res = await fetch('/api/admin/data', {
+        headers: {
+          'x-admin-password': sessionStorage.getItem('adminToken') || ''
+        }
+      });
       if (res.ok) {
         const json = await res.json();
         setData(json);
@@ -116,7 +124,10 @@ export function Admin() {
     try {
       await fetch('/api/admin/update-popup', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-admin-password': sessionStorage.getItem('adminToken') || ''
+        },
         body: JSON.stringify({ text: popupText, image: popupImage })
       });
       alert('Popup saved successfully');
@@ -129,7 +140,10 @@ export function Admin() {
     try {
       await fetch('/api/admin/update-contact', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-admin-password': sessionStorage.getItem('adminToken') || ''
+        },
         body: JSON.stringify({ wa, telegram })
       });
       alert('Contacts saved successfully');
@@ -142,7 +156,10 @@ export function Admin() {
     try {
       await fetch('/api/admin/update-upgrade', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-admin-password': sessionStorage.getItem('adminToken') || ''
+        },
         body: JSON.stringify({ description: upgradeDesc, price: upgradePrice, limit: upgradeLimit })
       });
       alert('Upgrade info saved successfully');
@@ -155,7 +172,10 @@ export function Admin() {
     try {
       await fetch('/api/admin/update-payment-key', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-admin-password': sessionStorage.getItem('adminToken') || ''
+        },
         body: JSON.stringify({ paymentApiKey })
       });
       alert('Payment key saved successfully');
@@ -168,7 +188,10 @@ export function Admin() {
     try {
       await fetch('/api/admin/update-user-limit', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-admin-password': sessionStorage.getItem('adminToken') || ''
+        },
         body: JSON.stringify({ id, limit })
       });
       fetchData();
@@ -180,7 +203,12 @@ export function Admin() {
   const deleteUser = async (id: string) => {
     if (!confirm('Are you sure you want to delete this user?')) return;
     try {
-      await fetch(`/api/admin/delete-user/${id}`, { method: 'DELETE' });
+      await fetch(`/api/admin/delete-user/${id}`, { 
+        method: 'DELETE',
+        headers: {
+          'x-admin-password': sessionStorage.getItem('adminToken') || ''
+        }
+      });
       fetchData();
     } catch (e) {
       alert('Failed to delete user');
