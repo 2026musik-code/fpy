@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { fypApi, Episode } from '../services/api';
-import { ArrowLeft, Play, ChevronUp, ChevronDown, List, X, Download } from 'lucide-react';
+import { ArrowLeft, Play, ChevronUp, ChevronDown, List, X, Download, MessageSquare } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { historyStore } from '../lib/history';
 import Hls from 'hls.js';
@@ -209,6 +209,8 @@ function VideoItem({ episode, isActive, isAdjacent, onEnded }: { key?: string | 
   const [duration, setDuration] = useState(0);
   const [showControls, setShowControls] = useState(false);
   const [limitData, setLimitData] = useState<any>(null); // For popup data
+  const [activeSubId, setActiveSubId] = useState<number>(-1);
+  const [showSubMenu, setShowSubMenu] = useState(false);
   const timerRef = useRef<NodeJS.Timeout>();
   const playPromiseRef = useRef<Promise<void> | null>(null);
   const isActiveRef = useRef(isActive);
@@ -244,6 +246,13 @@ function VideoItem({ episode, isActive, isAdjacent, onEnded }: { key?: string | 
             setStreamUrl(streamData.url);
             setOriginalUrl(streamData.originalUrl);
             setSubtitles(streamData.subtitles || []);
+            
+            // Set default subtitle
+            const subs = streamData.subtitles || [];
+            if (subs.length > 0) {
+              let idx = subs.findIndex((s: any) => s.label === "Indonesia" || s.lang === "id-ID" || s.label?.toLowerCase() === "indonesian");
+              setActiveSubId(idx !== -1 ? idx : 0);
+            }
           } else if (typeof streamData === 'string') {
             setStreamUrl(streamData);
           }
@@ -391,6 +400,22 @@ function VideoItem({ episode, isActive, isAdjacent, onEnded }: { key?: string | 
     resetTimer(isPlaying);
   };
 
+  // Handle text tracks update when activeSubId changes
+  useEffect(() => {
+    if (videoRef.current && videoRef.current.textTracks) {
+      const tracks = videoRef.current.textTracks;
+      for (let i = 0; i < tracks.length; i++) {
+        // Find if this track corresponds to our subtitle index
+        // Browsers might have extra tracks (e.g. from HLS), we map by order or just turn them all off except the selected one
+        if (i < subtitles.length) {
+          tracks[i].mode = i === activeSubId ? 'showing' : 'hidden';
+        } else {
+          tracks[i].mode = 'hidden';
+        }
+      }
+    }
+  }, [activeSubId, showControls, streamUrl, subtitles.length]);
+
   return (
     <div className="h-full w-full flex-shrink-0 snap-start snap-always relative bg-black group" onClick={togglePlay}>
       {/* Cover image or placeholder if outside render distance */}
@@ -418,7 +443,14 @@ function VideoItem({ episode, isActive, isAdjacent, onEnded }: { key?: string | 
           )}
         >
           {subtitles.map((sub, i) => (
-             <track key={i} kind="subtitles" src={sub.url} srcLang={sub.lang || "id"} label={sub.label || "Indonesia"} default />
+             <track 
+               key={i} 
+               kind="subtitles" 
+               src={sub.url} 
+               srcLang={sub.lang || "id"} 
+               label={sub.label || sub.lang || "Indonesia"} 
+               default={i === activeSubId}
+             />
           ))}
         </video>
       )}
@@ -450,18 +482,76 @@ function VideoItem({ episode, isActive, isAdjacent, onEnded }: { key?: string | 
           <h2 className="text-white font-bold text-lg md:text-xl drop-shadow-lg line-clamp-1 pr-4 text-shadow-md">
             {episode.title || `Episode ${episode.sort || episode.id}`}
           </h2>
-          {originalUrl && (
-            <a 
-              href={originalUrl} 
-              target="_blank" 
-              rel="noreferrer"
-              className="p-2 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md transition z-30 flex-shrink-0"
-              title="Download / Open source video"
-              onClick={e => e.stopPropagation()}
-            >
-              <Download className="w-5 h-5 text-white" />
-            </a>
-          )}
+          <div className="flex items-center gap-2 relative">
+            {subtitles.length > 0 && (
+              <div className="relative">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowSubMenu(!showSubMenu);
+                  }}
+                  className={cn(
+                    "p-2 rounded-full backdrop-blur-md transition z-30 flex-shrink-0 cursor-pointer",
+                    showSubMenu ? "bg-rose-500 text-white" : "bg-white/20 hover:bg-white/30 text-white"
+                  )}
+                  title="Subtitles"
+                >
+                  <MessageSquare className="w-5 h-5" />
+                </button>
+                
+                {/* Subtitle Menu */}
+                {showSubMenu && (
+                  <div 
+                    className="absolute bottom-full right-0 mb-3 bg-zinc-900 border border-white/10 rounded-xl p-2 min-w-[150px] max-h-[40vh] overflow-y-auto shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-2 custom-scrollbar"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider px-3 pb-2 pt-1 border-b border-white/5 mb-1">
+                      Subtitles
+                    </div>
+                    <button
+                      className={cn(
+                        "w-full text-left px-3 py-2 text-sm rounded-lg transition-colors flex items-center gap-2",
+                        activeSubId === -1 ? "bg-rose-500/20 text-rose-500 font-medium" : "text-zinc-300 hover:bg-white/10 hover:text-white"
+                      )}
+                      onClick={() => {
+                        setActiveSubId(-1);
+                        setShowSubMenu(false);
+                      }}
+                    >
+                      Mati (Off)
+                    </button>
+                    {subtitles.map((sub, i) => (
+                      <button
+                        key={i}
+                        className={cn(
+                          "w-full text-left px-3 py-2 text-sm rounded-lg transition-colors flex items-center gap-2",
+                          activeSubId === i ? "bg-rose-500/20 text-rose-500 font-medium" : "text-zinc-300 hover:bg-white/10 hover:text-white"
+                        )}
+                        onClick={() => {
+                          setActiveSubId(i);
+                          setShowSubMenu(false);
+                        }}
+                      >
+                        {sub.label || sub.lang || `Subtitle ${i + 1}`}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {originalUrl && (
+              <a 
+                href={originalUrl} 
+                target="_blank" 
+                rel="noreferrer"
+                className="p-2 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md transition z-30 flex-shrink-0"
+                title="Download / Open source video"
+                onClick={e => e.stopPropagation()}
+              >
+                <Download className="w-5 h-5 text-white" />
+              </a>
+            )}
+          </div>
         </div>
         
         {/* Progress Bar & Durasi */}

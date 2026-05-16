@@ -123,18 +123,20 @@ export const fypApi = {
       url = `${PROXY_BASE}/api/proxy/ts?url=${encodeURIComponent(url)}&origin=${encodeURIComponent(origin)}`;
     }
     
-    // Extract Indonesian subtitles specifically (or mapping all if needed)
     let subtitles = json.data?.subtitles || [];
-    let indonesianSub = subtitles.find((s: any) => s.label === "Indonesia" || s.lang === "id-ID" || s.label?.toLowerCase() === "indonesian");
     
-    if (indonesianSub) {
-      // proxy and convert to vtt
-      indonesianSub.url = `${PROXY_BASE}/api/proxy/sub?url=${encodeURIComponent(indonesianSub.url)}${origin ? '&origin=' + encodeURIComponent(origin) : ''}`;
+    if (Array.isArray(subtitles)) {
+      subtitles = subtitles.map((sub: any) => ({
+        ...sub,
+        url: `${PROXY_BASE}/api/proxy/sub?url=${encodeURIComponent(sub.url)}${origin ? '&origin=' + encodeURIComponent(origin) : ''}`
+      }));
+    } else {
+      subtitles = [];
     }
     
     return {
       url,
-      subtitles: indonesianSub ? [indonesianSub] : [],
+      subtitles: subtitles,
       originalUrl: json.data?.url || json.data?.videoUrl || json.data?.playUrl || json.data?.streams?.[0]?.url || "",
       origin
     };
