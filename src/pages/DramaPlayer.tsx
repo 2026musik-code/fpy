@@ -292,7 +292,12 @@ function VideoItem({ episode, isActive, isAdjacent, onEnded }: { key?: string | 
 
     if (streamUrl.includes('.m3u8') || streamUrl.includes('.m3u')) {
       if (Hls.isSupported()) {
-        hls = new Hls({ startPosition: -1 });
+        hls = new Hls({
+          startPosition: -1,
+          maxBufferLength: 30, // reduce buffer size for faster start / less fetching initially
+          maxMaxBufferLength: 60,
+          lowLatencyMode: true // attempt faster start
+        });
         
         hls.on(Hls.Events.ERROR, function (event, data) {
           if (data.fatal) {
