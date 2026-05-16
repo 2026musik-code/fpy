@@ -133,7 +133,9 @@ async function startServer() {
           customer_name: user.name || 'User Premium',
           customer_email: `user${user.id}@example.com`,
           channel_code: 'qris',
-          return_url: `${req.protocol}://${req.get('host')}/profile`
+          return_url: `${req.protocol}://${req.get('host')}/profile`,
+          callback_url: `${req.protocol}://${req.get('host')}/api/payment/callback`,
+          webhook_url: `${req.protocol}://${req.get('host')}/api/payment/callback`
         })
       });
       
@@ -156,9 +158,12 @@ async function startServer() {
 
   app.post("/api/payment/callback", (req, res) => {
     try {
-      const body = req.body;
-      const status = body.status || body.data?.status;
-      if (status === 'PAID' || status === 'SUCCESS' || status === 'success' || status === 'settlement') {
+      let body = req.body;
+      if (typeof body === 'string') {
+        try { body = JSON.parse(body); } catch(e) {}
+      }
+      const status = body.status || body.data?.status || body.transaction_status || body.data?.transaction_status;
+      if (status === 'PAID' || status === 'SUCCESS' || status === 'success' || status === 'settlement' || status === 'paid') {
         const reference_id = body.reference_id || body.data?.reference_id;
         if (reference_id) {
           const parts = reference_id.split('-');

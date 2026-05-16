@@ -157,7 +157,9 @@ app.post('/api/user/checkout', async (c) => {
         customer_name: user.name || 'User Premium',
         customer_email: `user${user.id}@example.com`,
         channel_code: 'qris',
-        return_url: `${new URL(c.req.url).origin}/profile`
+        return_url: `${new URL(c.req.url).origin}/profile`,
+        callback_url: `${new URL(c.req.url).origin}/api/payment/callback`,
+        webhook_url: `${new URL(c.req.url).origin}/api/payment/callback`
       })
     });
     
@@ -178,9 +180,23 @@ app.post('/api/user/checkout', async (c) => {
 
 app.post('/api/payment/callback', async (c) => {
   try {
-    const body = await c.req.json();
-    const status = body.status || body.data?.status;
-    if (status === 'PAID' || status === 'SUCCESS' || status === 'success' || status === 'settlement') {
+    let body: any;
+    const contentType = c.req.header('Content-Type') || '';
+    if (contentType.includes('application/json')) {
+      body = await c.req.json();
+    } else if (contentType.includes('application/x-www-form-urlencoded')) {
+      body = await c.req.parseBody();
+    } else {
+      const text = await c.req.text();
+      try {
+        body = JSON.parse(text);
+      } catch (e) {
+        body = {};
+      }
+    }
+    
+    const status = body.status || body.data?.status || body.transaction_status || body.data?.transaction_status;
+    if (status === 'PAID' || status === 'SUCCESS' || status === 'success' || status === 'settlement' || status === 'paid') {
       const reference_id = body.reference_id || body.data?.reference_id;
       if (reference_id) {
         const parts = reference_id.split('-');
