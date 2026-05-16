@@ -44,6 +44,7 @@ export function Admin() {
     try {
       const res = await fetch('/api/admin/verify-password', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: passwordInput })
       });
       if (res.ok) {
@@ -70,6 +71,7 @@ export function Admin() {
     try {
       const res = await fetch('/api/admin/change-password', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentPassword, newPassword })
       });
       const json = await res.json();
