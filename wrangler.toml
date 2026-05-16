@@ -1,0 +1,14 @@
+name = "fypshort"
+main = "src/worker.ts"
+compatibility_date = "2024-03-20"
+
+# Note: If deploying using Cloudflare Workers (not Pages), you can serve static assets directly:
+assets = { directory = "./dist", binding = "ASSETS" }
+
+[[kv_namespaces]]
+binding = "diana"
+id = "06d1b6331dcb48018e5df3130307436f"
+
+[[r2_buckets]]
+binding = "dracin"
+bucket_name = "dracin"

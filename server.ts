@@ -3,9 +3,64 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { Readable } from 'stream';
 
+// In-memory data store for Admin panel mock
+let adminData = {
+  popup: {
+    image: '',
+    text: 'Anda telah mencapai batas harian penonton gratis. Silahkan upgrade VIP atau hubungi Admin.'
+  },
+  contact: {
+    wa: '6281234567890',
+    telegram: 'admin_short'
+  },
+  users: [
+    { id: '1', name: 'Guest User', type: 'Free', limit: 5, ip: '192.168.1.100', userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+    { id: '2', name: 'Premium User', type: 'VIP', limit: 9999, ip: '192.168.1.101', userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X)' }
+  ],
+  traffic: [
+    { provider: 'dotdrama', views: 1245 },
+    { provider: 'netshort', views: 856 },
+    { provider: 'vivid', views: 432 }
+  ]
+};
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  app.use(express.json({ limit: '10mb' }));
+
+  // Admin APIs
+  app.get("/api/admin/data", (req, res) => {
+    res.json(adminData);
+  });
+
+  app.post("/api/admin/update-popup", (req, res) => {
+    adminData.popup = { ...adminData.popup, ...req.body };
+    res.json({ success: true, popup: adminData.popup });
+  });
+
+  app.post("/api/admin/update-contact", (req, res) => {
+    adminData.contact = { ...adminData.contact, ...req.body };
+    res.json({ success: true, contact: adminData.contact });
+  });
+
+  app.post("/api/admin/update-user-limit", (req, res) => {
+    const { id, limit } = req.body;
+    const user = adminData.users.find(u => u.id === id);
+    if (user) {
+      user.limit = limit;
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: "User not found" });
+    }
+  });
+
+  app.delete("/api/admin/delete-user/:id", (req, res) => {
+    const { id } = req.params;
+    adminData.users = adminData.users.filter(u => u.id !== id);
+    res.json({ success: true });
+  });
 
   // Proxy API for multiple providers to solve CORS
   app.get("/api/provider/:providerId", async (req, res) => {

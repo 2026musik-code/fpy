@@ -49,6 +49,13 @@ export function Profile() {
             icon={<CircleHelp className="w-4 h-4" />} 
             label="Help & Support" 
           />
+          <a href="/admin" className="mt-4 flex items-center justify-between w-full p-3 rounded-xl transition-colors hover:bg-white/5 text-rose-500 hover:text-rose-400">
+             <div className="flex items-center gap-3">
+               <Shield className="w-4 h-4" />
+               <span className="font-medium text-sm">Admin Panel</span>
+             </div>
+             <ChevronRight className="w-4 h-4 opacity-50" />
+          </a>
         </nav>
       </div>
 
