@@ -38,7 +38,12 @@ let localAdminData = {
 const getAdminData = async (c: any) => {
   if (c.env?.diana) {
     const data = await c.env.diana.get('adminData', 'json');
-    if (data) return data;
+    if (data) {
+      if (!data.adminPassword) {
+        data.adminPassword = localAdminData.adminPassword;
+      }
+      return data;
+    }
   }
   return localAdminData;
 };
