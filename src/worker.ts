@@ -91,7 +91,7 @@ app.get('/api/provider/:providerId', async (c) => {
     const providerId = c.req.param('providerId');
     const url = new URL(c.req.url);
     const params = url.searchParams;
-    const targetUrl = \`https://www.cutad.web.id/api/public/\${providerId}?\${params.toString()}\`;
+    const targetUrl = `https://www.cutad.web.id/api/public/${providerId}?${params.toString()}`;
     
     const proxyRes = await fetch(targetUrl);
     const data = await proxyRes.json();
@@ -114,29 +114,29 @@ app.get('/api/proxy/m3u8', async (c) => {
     }
 
     const proxyRes = await fetch(targetUrl, { headers });
-    if (!proxyRes.ok) throw new Error(\`HTTP \${proxyRes.status}\`);
+    if (!proxyRes.ok) throw new Error(`HTTP ${proxyRes.status}`);
     let text = await proxyRes.text();
 
     text = text.replace(/URI="(.*?)"/g, (match, p1) => {
       if (p1.startsWith('data:') || p1.startsWith('/api/proxy')) return match;
       const absoluteUrl = new URL(p1, targetUrl).href;
       if (absoluteUrl.includes('.m3u')) {
-        return \`URI="/api/proxy/m3u8?url=\${encodeURIComponent(absoluteUrl)}\${origin ? '&origin='+encodeURIComponent(origin) : ''}"\`;
+        return `URI="/api/proxy/m3u8?url=${encodeURIComponent(absoluteUrl)}${origin ? '&origin='+encodeURIComponent(origin) : ''}"`;
       }
-      return \`URI="/api/proxy/ts?url=\${encodeURIComponent(absoluteUrl)}\${origin ? '&origin='+encodeURIComponent(origin) : ''}"\`;
+      return `URI="/api/proxy/ts?url=${encodeURIComponent(absoluteUrl)}${origin ? '&origin='+encodeURIComponent(origin) : ''}"`;
     });
     
-    text = text.split('\\n').map((line: string) => {
+    text = text.split('\n').map((line: string) => {
       if (line.trim() && !line.startsWith('#')) {
          if (line.startsWith('/api/proxy')) return line;
          const absoluteUrl = new URL(line.trim(), targetUrl).href;
          if (absoluteUrl.includes('.m3u')) {
-           return \`/api/proxy/m3u8?url=\${encodeURIComponent(absoluteUrl)}\${origin ? '&origin='+encodeURIComponent(origin) : ''}\`;
+           return `/api/proxy/m3u8?url=${encodeURIComponent(absoluteUrl)}${origin ? '&origin='+encodeURIComponent(origin) : ''}`;
          }
-         return \`/api/proxy/ts?url=\${encodeURIComponent(absoluteUrl)}\${origin ? '&origin='+encodeURIComponent(origin) : ''}\`;
+         return `/api/proxy/ts?url=${encodeURIComponent(absoluteUrl)}${origin ? '&origin='+encodeURIComponent(origin) : ''}`;
       }
       return line;
-    }).join('\\n');
+    }).join('\n');
 
     c.header("Content-Type", "application/vnd.apple.mpegurl");
     c.header("Access-Control-Allow-Origin", "*");
@@ -198,12 +198,12 @@ app.get('/api/proxy/sub', async (c) => {
     }
 
     const proxyRes = await fetch(targetUrl, { headers });
-    if (!proxyRes.ok) throw new Error(\`HTTP \${proxyRes.status}\`);
+    if (!proxyRes.ok) throw new Error(`HTTP ${proxyRes.status}`);
 
     let text = await proxyRes.text();
 
     if (targetUrl.toLowerCase().endsWith('.srt') || !text.startsWith('WEBVTT')) {
-      text = "WEBVTT\\n\\n" + text.replace(/(\\d{2}:\\d{2}:\\d{2}),(\\d{3})/g, '$1.$2');
+      text = "WEBVTT\n\n" + text.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
     }
 
     c.header("Access-Control-Allow-Origin", "*");
