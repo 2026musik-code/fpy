@@ -139,9 +139,15 @@ async function startServer() {
       
       if (response.ok) {
         const responseData = await response.json();
-        res.json({ success: true, payment_url: responseData.data?.checkout_url || responseData.checkout_url || responseData.payment_url || '' });
+        const paymentUrl = responseData.data?.checkout_url || responseData.checkout_url || responseData.payment_url || '';
+        if (!paymentUrl) {
+          res.status(500).json({ success: false, error: `Response OK, tapi tidak ada url pembayaran. Response API: ${JSON.stringify(responseData)}` });
+        } else {
+          res.json({ success: true, payment_url: paymentUrl });
+        }
       } else {
-        res.status(500).json({ success: false, error: 'Gagal membuat transaksi' });
+        const errorText = await response.text();
+        res.status(500).json({ success: false, error: `Gagal membuat transaksi: ${errorText}` });
       }
     } catch (error) {
       res.status(500).json({ success: false, error: 'Terjadi kesalahan sistem' });

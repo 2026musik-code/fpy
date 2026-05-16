@@ -163,9 +163,14 @@ app.post('/api/user/checkout', async (c) => {
     
     if (res.ok) {
       const responseData = await res.json();
-      return c.json({ success: true, payment_url: responseData.data?.checkout_url || responseData.checkout_url || responseData.payment_url || '' });
+      const paymentUrl = responseData.data?.checkout_url || responseData.checkout_url || responseData.payment_url || '';
+      if (!paymentUrl) {
+         return c.json({ success: false, error: `Response OK, tapi tidak ada url pembayaran. Response API: ${JSON.stringify(responseData)}` }, 500);
+      }
+      return c.json({ success: true, payment_url: paymentUrl });
     }
-    return c.json({ success: false, error: 'Gagal membuat transaksi' }, 500);
+    const errorText = await res.text();
+    return c.json({ success: false, error: `Gagal membuat transaksi: ${errorText}` }, 500);
   } catch (error) {
     return c.json({ success: false, error: 'Terjadi kesalahan sistem' }, 500);
   }
