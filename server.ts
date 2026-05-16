@@ -3,6 +3,9 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { Readable } from 'stream';
 
+// Disable TLS verification for proxy
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
 // In-memory data store for Admin panel mock
 let adminData = {
   popup: {
@@ -89,8 +92,13 @@ async function startServer() {
       const targetUrl = `https://www.cutad.web.id/api/public/${provider}?${params.toString()}`;
       console.log(`Proxying ${targetUrl}`);
       const proxyRes = await fetch(targetUrl);
-      const data = await proxyRes.json();
-      res.json(data);
+      const text = await proxyRes.text();
+      try {
+        const data = JSON.parse(text);
+        res.json(data);
+      } catch (e: any) {
+        throw new Error(`Invalid JSON from upstream, response: ${text.slice(0, 100)}...`);
+      }
     } catch (err: any) {
       console.error(err);
       res.status(500).json({ error: err.message });

@@ -120,8 +120,13 @@ app.get('/api/provider/:providerId', async (c) => {
     const targetUrl = `https://www.cutad.web.id/api/public/${providerId}?${params.toString()}`;
     
     const proxyRes = await fetch(targetUrl);
-    const data = await proxyRes.json();
-    return c.json(data);
+    const text = await proxyRes.text();
+    try {
+      const data = JSON.parse(text);
+      return c.json(data);
+    } catch (e: any) {
+      return c.json({ error: `Invalid JSON from upstream, response: ${text.slice(0, 100)}...` }, 502);
+    }
   } catch (err: any) {
     return c.json({ error: err.message }, 500);
   }
