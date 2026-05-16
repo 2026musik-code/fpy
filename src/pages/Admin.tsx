@@ -110,7 +110,7 @@ export function Admin() {
   if (!data) return <div className="text-center pt-32 text-rose-500">Failed to load data</div>;
 
   return (
-    <main className="min-h-screen pt-4 md:pt-24 pb-24 px-4 md:px-8 max-w-6xl mx-auto flex flex-col md:flex-row gap-4 md:gap-8">
+    <main className="min-h-screen pt-20 md:pt-28 pb-24 px-4 md:px-8 max-w-6xl mx-auto flex flex-col md:flex-row gap-4 md:gap-8">
       {/* Sidebar */}
       <div className="w-full md:w-64 shrink-0 flex flex-col gap-4">
         <div className="flex items-center gap-3 mb-2 md:mb-4 p-3 md:p-4 bg-zinc-900 border border-white/5 rounded-2xl">

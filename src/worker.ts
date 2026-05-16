@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 type Bindings = {
   diana: KVNamespace;
   dracin: R2Bucket;
+  ASSETS: { fetch: (req: Request) => Promise<Response> };
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -215,6 +216,16 @@ app.get('/api/proxy/sub', async (c) => {
 });
 
 // Since this worker will also serve frontend assets (when deployed on workers),
-// you can inject Hono's serve-static here if configuring for Pages or Site bindings.
+// you can handle SPA fallback like this:
+app.get('*', async (c) => {
+  if (c.env?.ASSETS) {
+    const res = await c.env.ASSETS.fetch(c.req.raw);
+    if (res.status === 404) {
+      return c.env.ASSETS.fetch(new Request(new URL('/', c.req.url).toString(), c.req.raw));
+    }
+    return res;
+  }
+  return c.text('Not found', 404);
+});
 
 export default app;
