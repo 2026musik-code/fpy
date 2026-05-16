@@ -4,6 +4,7 @@ import { Users, Settings, BarChart2, MessageCircle, Save, Trash2, Edit2, Upload,
 interface AdminData {
   popup: { image: string; text: string };
   contact: { wa: string; telegram: string };
+  upgrade: { description: string; price: string; limit: string };
   users: Array<{ id: string; name: string; type: string; limit: number; ip: string; userAgent: string }>;
   traffic: Array<{ provider: string; views: number }>;
 }
@@ -18,6 +19,9 @@ export function Admin() {
   const [popupImage, setPopupImage] = useState('');
   const [wa, setWa] = useState('');
   const [telegram, setTelegram] = useState('');
+  const [upgradeDesc, setUpgradeDesc] = useState('');
+  const [upgradePrice, setUpgradePrice] = useState('');
+  const [upgradeLimit, setUpgradeLimit] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -31,10 +35,13 @@ export function Admin() {
       if (res.ok) {
         const json = await res.json();
         setData(json);
-        setPopupText(json.popup.text);
-        setPopupImage(json.popup.image);
-        setWa(json.contact.wa);
-        setTelegram(json.contact.telegram);
+        setPopupText(json.popup?.text || '');
+        setPopupImage(json.popup?.image || '');
+        setWa(json.contact?.wa || '');
+        setTelegram(json.contact?.telegram || '');
+        setUpgradeDesc(json.upgrade?.description || '');
+        setUpgradePrice(json.upgrade?.price || '');
+        setUpgradeLimit(json.upgrade?.limit || '');
       }
     } catch (e) {
       console.error(e);
@@ -66,6 +73,19 @@ export function Admin() {
       alert('Contacts saved successfully');
     } catch (e) {
       alert('Failed to save contacts');
+    }
+  };
+
+  const saveUpgrade = async () => {
+    try {
+      await fetch('/api/admin/update-upgrade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: upgradeDesc, price: upgradePrice, limit: upgradeLimit })
+      });
+      alert('Upgrade info saved successfully');
+    } catch (e) {
+      alert('Failed to save upgrade info');
     }
   };
 
@@ -126,6 +146,7 @@ export function Admin() {
         <nav className="flex md:flex-col gap-1.5 overflow-x-auto hide-scrollbar pb-1 md:pb-0">
           <MenuButton active={activeTab === 'users'} onClick={() => setActiveTab('users')} icon={<Users className="w-4 h-4" />} label="Users" />
           <MenuButton active={activeTab === 'popup'} onClick={() => setActiveTab('popup')} icon={<MessageCircle className="w-4 h-4" />} label="Limit Popup" />
+          <MenuButton active={activeTab === 'upgrade'} onClick={() => setActiveTab('upgrade')} icon={<Settings className="w-4 h-4" />} label="Upgrade Info" />
           <MenuButton active={activeTab === 'traffic'} onClick={() => setActiveTab('traffic')} icon={<Activity className="w-4 h-4" />} label="Traffic" />
           <MenuButton active={activeTab === 'contact'} onClick={() => setActiveTab('contact')} icon={<MessageCircle className="w-4 h-4" />} label="Contact" />
         </nav>
@@ -230,6 +251,53 @@ export function Admin() {
 
               <button onClick={savePopup} className="flex items-center gap-2 bg-rose-600 hover:bg-rose-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors mt-4">
                 <Save className="w-4 h-4" /> Save Popup Settings
+              </button>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'upgrade' && (
+          <div className="space-y-6 animate-in fade-in duration-300 max-w-xl">
+            <div>
+              <h3 className="text-lg font-bold mb-1">Upgrade Info Configuration</h3>
+              <p className="text-zinc-500 text-xs mb-4">Set the descriptive text and price shown in the user profile.</p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Upgrade Description</label>
+                <textarea 
+                  value={upgradeDesc}
+                  onChange={(e) => setUpgradeDesc(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:border-rose-500 min-h-[80px]"
+                  placeholder="Buka akses tanpa batas tayangan premium..."
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Price / Pricing Text</label>
+                <input 
+                  type="text" 
+                  value={upgradePrice}
+                  onChange={(e) => setUpgradePrice(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:border-rose-500"
+                  placeholder="Rp 50.000 / Bulan"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">Limit After Upgrade</label>
+                <input 
+                  type="text" 
+                  value={upgradeLimit}
+                  onChange={(e) => setUpgradeLimit(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-300 focus:outline-none focus:border-rose-500"
+                  placeholder="Unlimited"
+                />
+              </div>
+
+              <button onClick={saveUpgrade} className="flex items-center gap-2 bg-rose-600 hover:bg-rose-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors mt-4">
+                <Save className="w-4 h-4" /> Save Upgrade Info
               </button>
             </div>
           </div>

@@ -1,158 +1,143 @@
-import { UserCircle, Settings, ChevronRight, LogOut, Bell, Shield, CircleHelp } from 'lucide-react';
-import { useState } from 'react';
+import { UserCircle, Settings, LogOut, Shield, Zap, MessageCircle, Send } from 'lucide-react';
+import { useState, useEffect } from 'react';
+
+interface ProfileData {
+  user: {
+    name: string;
+    type: string;
+    limit: number;
+    ip: string;
+    userAgent: string;
+  };
+  contacts: {
+    wa: string;
+    telegram: string;
+  };
+  upgrade: {
+    description: string;
+    price: string;
+    limit: string;
+  };
+}
 
 export function Profile() {
-  const [activeTab, setActiveTab] = useState('account');
+  const [data, setData] = useState<ProfileData | null>(null);
+
+  useEffect(() => {
+    fetch('/api/profile/data')
+      .then(res => res.json())
+      .then(setData)
+      .catch(console.error);
+  }, []);
+
+  if (!data) return <div className="text-center pt-32 text-zinc-500 flex flex-col items-center gap-4">
+    <div className="w-8 h-8 border-4 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
+    Memuat Profil...
+  </div>;
 
   return (
-    <main className="min-h-screen pt-20 md:pt-28 pb-24 px-4 md:px-8 max-w-5xl mx-auto flex flex-col md:flex-row gap-4 md:gap-8">
-      {/* Sidebar relative to profile */}
-      <div className="w-full md:w-64 flex flex-col gap-4">
-        <div className="flex items-center gap-3 mb-2 md:mb-4 p-3 md:p-4 bg-zinc-900 border border-white/5 rounded-2xl">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-rose-500 to-orange-400 flex items-center justify-center shadow-lg">
-            <UserCircle className="w-8 h-8 text-white" />
-          </div>
-          <div>
-            <h2 className="font-bold text-base">Guest User</h2>
-            <p className="text-xs text-zinc-500">Free Account</p>
+    <main className="min-h-screen pt-20 md:pt-28 pb-24 px-4 max-w-xl mx-auto flex flex-col gap-6">
+      
+      {/* Header Logo & Basic Info */}
+      <div className="flex flex-col items-center mt-4">
+        <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-rose-500 to-orange-400 p-1 mb-4 shadow-xl">
+          <div className="w-full h-full bg-zinc-950 rounded-full flex items-center justify-center">
+            <UserCircle className="w-16 h-16 text-rose-500" />
           </div>
         </div>
+        <h2 className="text-2xl font-bold">{data.user?.name || "Guest"}</h2>
+        <span className={`px-3 py-1 rounded-full text-xs font-bold mt-2 ${data.user?.type === 'VIP' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/20' : 'bg-zinc-800 text-zinc-400'}`}>
+          {data.user?.type || "Free"} ACCOUNT
+        </span>
+      </div>
 
-        <nav className="flex md:flex-col gap-1.5 overflow-x-auto hide-scrollbar pb-1 md:pb-0">
-          <MenuButton 
-            active={activeTab === 'account'} 
-            onClick={() => setActiveTab('account')}
-            icon={<UserCircle className="w-4 h-4" />} 
-            label="Account" 
-          />
-          <MenuButton 
-            active={activeTab === 'preferences'} 
-            onClick={() => setActiveTab('preferences')}
-            icon={<Settings className="w-4 h-4" />} 
-            label="Preferences" 
-          />
-          <MenuButton 
-            active={activeTab === 'notifications'} 
-            onClick={() => setActiveTab('notifications')}
-            icon={<Bell className="w-4 h-4" />} 
-            label="Notifications" 
-          />
-          <MenuButton 
-            active={activeTab === 'security'} 
-            onClick={() => setActiveTab('security')}
-            icon={<Shield className="w-4 h-4" />} 
-            label="Security" 
-          />
-          <MenuButton 
-            active={activeTab === 'help'} 
-            onClick={() => setActiveTab('help')}
-            icon={<CircleHelp className="w-4 h-4" />} 
-            label="Help & Support" 
-          />
-          <a href="/admin" className="mt-4 flex items-center justify-between w-full p-3 rounded-xl transition-colors hover:bg-white/5 text-rose-500 hover:text-rose-400">
-             <div className="flex items-center gap-3">
-               <Shield className="w-4 h-4" />
-               <span className="font-medium text-sm">Admin Panel</span>
+      {/* Account Details Box */}
+      <div className="bg-zinc-900 border border-white/5 rounded-2xl p-5 shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-rose-500 to-orange-500"></div>
+        <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+          <Settings className="w-5 h-5 text-rose-500" /> Profil Detail
+        </h3>
+        
+        <div className="space-y-4">
+          <DetailRow label="Nama" value={data.user?.name || '-'} />
+          <DetailRow label="Jenis User" value={data.user?.type || '-'} />
+          <DetailRow label="Limit" value={`${data.user?.limit || 0} Views`} highlight />
+          <DetailRow label="IP" value={data.user?.ip || '-'} />
+          <div className="pt-2 border-t border-white/5">
+             <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1 font-semibold">User-Agent</div>
+             <div className="text-xs text-zinc-300 font-mono break-all bg-zinc-950 p-3 rounded-xl border border-zinc-900 leading-relaxed shadow-inner">
+               {data.user?.userAgent || '-'}
              </div>
-             <ChevronRight className="w-4 h-4 opacity-50" />
-          </a>
-        </nav>
+          </div>
+        </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 bg-zinc-900/50 border border-white/5 rounded-2xl p-4 md:p-6 relative">
-        {activeTab === 'account' && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <div>
-              <h3 className="text-lg font-bold mb-1">Account Details</h3>
-              <p className="text-zinc-400 text-xs mb-4">Manage your account information and email settings.</p>
-              
-              <div className="space-y-3 max-w-md">
-                <div>
-                  <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-1">Username</label>
-                  <input 
-                    type="text" 
-                    value="Guest User" 
-                    disabled
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-300 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-1">Email Address</label>
-                  <input 
-                    type="email" 
-                    value="guest@fypshort.app" 
-                    disabled
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-sm text-zinc-300 focus:outline-none"
-                  />
-                </div>
+      {/* Upgrade Banner */}
+      <div className="bg-gradient-to-br from-rose-950 to-orange-950 border border-rose-500/20 rounded-2xl p-5 shadow-lg relative overflow-hidden">
+        <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/5 rounded-full blur-3xl"></div>
+        <div className="relative z-10 flex flex-col items-center text-center">
+           <div className="w-12 h-12 rounded-full bg-rose-500/20 text-rose-500 flex items-center justify-center mb-4">
+             <Zap className="w-6 h-6" />
+           </div>
+           <h3 className="text-xl font-black text-white mb-2 uppercase tracking-wide">Upgrade VIP</h3>
+           <p className="text-sm text-rose-200/80 mb-6 max-w-sm">
+             {data.upgrade?.description || 'Upgrade akun Anda untuk menikmati akses tanpa batas ke semua tayangan premium kami.'}
+           </p>
+           
+           <div className="w-full bg-black/40 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 mb-2 shadow-inner border border-white/5">
+              <div className="text-center md:text-left flex-1">
+                <div className="text-[10px] text-rose-300/70 font-semibold tracking-wider uppercase mb-1">Harga</div>
+                <div className="text-lg font-bold text-white">{data.upgrade?.price || 'Rp 50.000'}</div>
               </div>
-            </div>
-
-            <div className="pt-4 border-t border-white/5 mt-4">
-              <h3 className="text-base font-bold mb-3 text-rose-500">Danger Zone</h3>
-              <button className="flex items-center gap-2 text-rose-500 bg-rose-500/10 hover:bg-rose-500/20 px-3 py-2 rounded-xl transition-colors font-medium text-xs">
-                <LogOut className="w-4 h-4" />
-                Sign Out
-              </button>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'preferences' && (
-          <div className="space-y-6 animate-in fade-in duration-300">
-            <h3 className="text-lg font-bold mb-3">App Preferences</h3>
-            <div className="space-y-3">
-              <PreferenceItem title="Autoplay Video" description="Automatically play next episode" defaultChecked />
-              <PreferenceItem title="High Quality Video" description="Stream in highest available quality (uses more data)" />
-              <PreferenceItem title="Save History" description="Remember what I've watched" defaultChecked />
-            </div>
-          </div>
-        )}
-
-        {/* Placeholders for others */}
-        {['notifications', 'security', 'help'].includes(activeTab) && (
-          <div className="flex flex-col items-center justify-center h-64 text-zinc-500 animate-in fade-in duration-300">
-            <Settings className="w-12 h-12 mb-4 opacity-20" />
-            <p>This feature is not available yet.</p>
-          </div>
-        )}
+              <div className="w-px h-8 bg-white/10 hidden md:block"></div>
+              <div className="w-full h-px bg-white/10 block md:hidden"></div>
+              <div className="text-center md:text-right flex-1">
+                <div className="text-[10px] text-rose-300/70 font-semibold tracking-wider uppercase mb-1">Limit</div>
+                <div className="text-lg font-bold text-rose-400">{data.upgrade?.limit || 'Unlimited'}</div>
+              </div>
+           </div>
+        </div>
       </div>
+
+      {/* Contact Support */}
+      <div className="bg-zinc-900 border border-white/5 rounded-2xl p-5">
+        <div className="text-center mb-4">
+          <h3 className="font-bold text-base mb-1">Hubungi Admin</h3>
+          <p className="text-xs text-zinc-500">Upgrade akun atau sampaikan kendala.</p>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-3">
+          <a href={`https://wa.me/${data.contacts?.wa}`} target="_blank" rel="noreferrer" className="flex flex-col items-center justify-center gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 border border-emerald-500/20 rounded-xl py-4 transition-colors">
+            <MessageCircle className="w-6 h-6" />
+            <span className="text-xs font-semibold">WhatsApp</span>
+          </a>
+          <a href={`https://t.me/${data.contacts?.telegram}`} target="_blank" rel="noreferrer" className="flex flex-col items-center justify-center gap-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-500 border border-blue-500/20 rounded-xl py-4 transition-colors">
+            <Send className="w-6 h-6" />
+            <span className="text-xs font-semibold">Telegram</span>
+          </a>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between mt-4">
+        <a href="/admin" className="flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-semibold text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors">
+          <Shield className="w-4 h-4" /> Masuk Admin
+        </a>
+        <button className="flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-semibold text-rose-500 hover:text-white hover:bg-rose-500 transition-colors">
+          <LogOut className="w-4 h-4" /> Sign Out
+        </button>
+      </div>
+
     </main>
   );
 }
 
-function MenuButton({ active, icon, label, onClick }: { active: boolean, icon: React.ReactNode, label: string, onClick: () => void }) {
+function DetailRow({ label, value, highlight = false }: { label: string, value: string | number, highlight?: boolean }) {
   return (
-    <button 
-      onClick={onClick}
-      className={`flex items-center justify-between w-full p-3 rounded-xl transition-colors whitespace-nowrap ${
-        active ? 'bg-rose-500/10 text-rose-500' : 'hover:bg-white/5 text-zinc-400 hover:text-zinc-200'
-      }`}
-    >
-      <div className="flex items-center gap-3">
-        {icon}
-        <span className="font-medium text-sm">{label}</span>
-      </div>
-      <ChevronRight className={`w-4 h-4 ${active ? 'opacity-100' : 'opacity-0'}`} />
-    </button>
-  );
-}
-
-function PreferenceItem({ title, description, defaultChecked = false }: { title: string, description: string, defaultChecked?: boolean }) {
-  const [checked, setChecked] = useState(defaultChecked);
-  return (
-    <div className="flex items-center justify-between p-4 bg-zinc-950 rounded-xl border border-white/5">
-      <div>
-        <h4 className="font-medium">{title}</h4>
-        <p className="text-xs text-zinc-500 mt-1">{description}</p>
-      </div>
-      <button 
-        onClick={() => setChecked(!checked)}
-        className={`w-12 h-6 rounded-full transition-colors relative ${checked ? 'bg-rose-500' : 'bg-zinc-800'}`}
-      >
-        <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-0'}`} />
-      </button>
+    <div className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+      <span className="text-sm text-zinc-400 font-medium">{label}</span>
+      <span className={`text-sm font-semibold text-right ${highlight ? 'text-rose-400' : 'text-zinc-100'}`}>
+        {value}
+      </span>
     </div>
   );
 }

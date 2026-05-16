@@ -21,7 +21,12 @@ let adminData = {
     { provider: 'dotdrama', views: 1245 },
     { provider: 'netshort', views: 856 },
     { provider: 'vivid', views: 432 }
-  ]
+  ],
+  upgrade: {
+    description: 'Upgrade ke VIP untuk akses tanpa batas tayangan premium',
+    price: 'Rp 50.000 / Bulan',
+    limit: 'Unlimited'
+  }
 };
 
 async function startServer() {
@@ -43,6 +48,20 @@ async function startServer() {
   app.post("/api/admin/update-contact", (req, res) => {
     adminData.contact = { ...adminData.contact, ...req.body };
     res.json({ success: true, contact: adminData.contact });
+  });
+
+  app.post("/api/admin/update-upgrade", (req, res) => {
+    adminData.upgrade = { ...adminData.upgrade, ...req.body };
+    res.json({ success: true, upgrade: adminData.upgrade });
+  });
+
+  app.get("/api/profile/data", (req, res) => {
+    const user = adminData.users[0] || { name: 'Guest User', type: 'Free', limit: 5, ip: '127.0.0.1', userAgent: 'Browser' };
+    res.json({
+      user,
+      contacts: adminData.contact,
+      upgrade: adminData.upgrade
+    });
   });
 
   app.post("/api/admin/update-user-limit", (req, res) => {

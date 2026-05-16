@@ -26,7 +26,12 @@ let localAdminData = {
     { provider: 'dotdrama', views: 1245 },
     { provider: 'netshort', views: 856 },
     { provider: 'vivid', views: 432 }
-  ]
+  ],
+  upgrade: {
+    description: 'Upgrade ke VIP untuk akses tanpa batas tayangan premium',
+    price: 'Rp 50.000 / Bulan',
+    limit: 'Unlimited'
+  }
 };
 
 const getAdminData = async (c: any) => {
@@ -66,6 +71,14 @@ app.post('/api/admin/update-contact', async (c) => {
   return c.json({ success: true, contact: data.contact });
 });
 
+app.post('/api/admin/update-upgrade', async (c) => {
+  const body = await c.req.json();
+  const data = await getAdminData(c);
+  data.upgrade = { ...data.upgrade, ...body };
+  await saveAdminData(c, data);
+  return c.json({ success: true, upgrade: data.upgrade });
+});
+
 app.post('/api/admin/update-user-limit', async (c) => {
   const body = await c.req.json();
   const data = await getAdminData(c);
@@ -84,6 +97,18 @@ app.delete('/api/admin/delete-user/:id', async (c) => {
   data.users = data.users.filter((u: any) => u.id !== id);
   await saveAdminData(c, data);
   return c.json({ success: true });
+});
+
+app.get('/api/profile/data', async (c) => {
+  const data = await getAdminData(c);
+  // Simulating the current user (e.g. User with id=1)
+  const user = data.users[0] || { name: 'Guest User', type: 'Free', limit: 5, ip: '127.0.0.1', userAgent: 'Browser' };
+  
+  return c.json({
+    user,
+    contacts: data.contact,
+    upgrade: data.upgrade
+  });
 });
 
 // Proxy API for multiple providers
