@@ -32,7 +32,8 @@ let localAdminData = {
     price: 'Rp 50.000 / Bulan',
     limit: 'Unlimited'
   },
-  adminPassword: 'admin'
+  adminPassword: 'admin',
+  paymentApiKey: ''
 };
 
 const getAdminData = async (c: any) => {
@@ -41,6 +42,9 @@ const getAdminData = async (c: any) => {
     if (data) {
       if (!data.adminPassword) {
         data.adminPassword = localAdminData.adminPassword;
+      }
+      if (data.paymentApiKey === undefined) {
+        data.paymentApiKey = localAdminData.paymentApiKey;
       }
       return data;
     }
@@ -124,6 +128,47 @@ app.post('/api/admin/change-password', async (c) => {
     return c.json({ success: true });
   }
   return c.json({ success: false, error: 'Incorrect current password' }, 401);
+});
+
+app.post('/api/admin/update-payment-key', async (c) => {
+  const body = await c.req.json();
+  const data = await getAdminData(c);
+  data.paymentApiKey = body.paymentApiKey;
+  await saveAdminData(c, data);
+  return c.json({ success: true });
+});
+
+app.post('/api/user/checkout', async (c) => {
+  const data = await getAdminData(c);
+  const user = await getOrCreateUser(c, data);
+  const amountStr = data.upgrade.price.replace(/[^0-9]/g, '');
+  const amount = parseInt(amountStr, 10) || 50000;
+
+  try {
+    const res = await fetch('https://paymenku.com/api/v1/transaction/create', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${data.paymentApiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        reference_id: `INV-${Date.now()}-${user.id}`,
+        amount: amount,
+        customer_name: user.name || 'User Premium',
+        customer_email: `user${user.id}@example.com`,
+        channel_code: 'qris',
+        return_url: `${new URL(c.req.url).origin}/profile`
+      })
+    });
+    
+    if (res.ok) {
+      const responseData = await res.json();
+      return c.json({ success: true, payment_url: responseData.data?.checkout_url || responseData.checkout_url || responseData.payment_url || '' });
+    }
+    return c.json({ success: false, error: 'Gagal membuat transaksi' }, 500);
+  } catch (error) {
+    return c.json({ success: false, error: 'Terjadi kesalahan sistem' }, 500);
+  }
 });
 
 app.post('/api/admin/update-user-limit', async (c) => {

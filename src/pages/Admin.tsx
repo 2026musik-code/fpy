@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Users, Settings, BarChart2, MessageCircle, Save, Trash2, Edit2, Upload, Activity, ShieldCheck } from 'lucide-react';
+import { Users, Settings, BarChart2, MessageCircle, Save, Trash2, Edit2, Upload, Activity, ShieldCheck, CreditCard } from 'lucide-react';
 
 interface AdminData {
   popup: { image: string; text: string };
@@ -7,6 +7,7 @@ interface AdminData {
   upgrade: { description: string; price: string; limit: string };
   users: Array<{ id: string; name: string; type: string; limit: number; ip: string; userAgent: string }>;
   traffic: Array<{ provider: string; views: number }>;
+  paymentApiKey: string;
 }
 
 export function Admin() {
@@ -30,6 +31,7 @@ export function Admin() {
   const [upgradeDesc, setUpgradeDesc] = useState('');
   const [upgradePrice, setUpgradePrice] = useState('');
   const [upgradeLimit, setUpgradeLimit] = useState('');
+  const [paymentApiKey, setPaymentApiKey] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -101,6 +103,7 @@ export function Admin() {
         setUpgradeDesc(json.upgrade?.description || '');
         setUpgradePrice(json.upgrade?.price || '');
         setUpgradeLimit(json.upgrade?.limit || '');
+        setPaymentApiKey(json.paymentApiKey || '');
       }
     } catch (e) {
       console.error(e);
@@ -145,6 +148,19 @@ export function Admin() {
       alert('Upgrade info saved successfully');
     } catch (e) {
       alert('Failed to save upgrade info');
+    }
+  };
+
+  const savePaymentKey = async () => {
+    try {
+      await fetch('/api/admin/update-payment-key', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentApiKey })
+      });
+      alert('Payment key saved successfully');
+    } catch (e) {
+      alert('Failed to save payment key');
     }
   };
 
@@ -246,6 +262,7 @@ export function Admin() {
           <MenuButton active={activeTab === 'traffic'} onClick={() => setActiveTab('traffic')} icon={<Activity className="w-4 h-4" />} label="Traffic" />
           <MenuButton active={activeTab === 'contact'} onClick={() => setActiveTab('contact')} icon={<MessageCircle className="w-4 h-4" />} label="Contact" />
           <MenuButton active={activeTab === 'security'} onClick={() => setActiveTab('security')} icon={<ShieldCheck className="w-4 h-4" />} label="Security" />
+          <MenuButton active={activeTab === 'payment'} onClick={() => setActiveTab('payment')} icon={<CreditCard className="w-4 h-4" />} label="Payment" />
         </nav>
       </div>
 
@@ -506,6 +523,30 @@ export function Admin() {
                 <Save className="w-4 h-4" /> Update Password
               </button>
             </form>
+          </div>
+        )}
+
+        {activeTab === 'payment' && (
+          <div className="space-y-4 animate-in fade-in duration-300">
+            <h3 className="text-lg font-bold mb-1">Payment Integration</h3>
+            <p className="text-zinc-500 text-xs mb-4">Pengaturan API Key untuk Paymenku</p>
+
+            <div className="space-y-4 max-w-lg">
+              <div>
+                <label className="block text-xs font-semibold text-zinc-400 mb-1.5 uppercase tracking-wider">Paymenku API Key / Authorization Bearer</label>
+                <input 
+                  type="text"
+                  value={paymentApiKey}
+                  onChange={e => setPaymentApiKey(e.target.value)}
+                  className="w-full bg-black/50 border border-white/5 rounded-xl px-4 py-2.5 outline-none focus:border-rose-500/50 transition-colors font-mono text-sm"
+                  placeholder="e.g. key_test_xxxxxx"
+                />
+              </div>
+              
+              <button onClick={savePaymentKey} className="flex items-center gap-2 bg-rose-600 hover:bg-rose-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors mt-2">
+                <Save className="w-4 h-4" /> Save API Key
+              </button>
+            </div>
           </div>
         )}
       </div>

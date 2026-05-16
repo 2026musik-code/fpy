@@ -1,4 +1,4 @@
-import { UserCircle, Settings, LogOut, Shield, Zap, MessageCircle, Send } from 'lucide-react';
+import { UserCircle, Settings, LogOut, Shield, Zap, MessageCircle, Send, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 interface ProfileData {
@@ -22,6 +22,7 @@ interface ProfileData {
 
 export function Profile() {
   const [data, setData] = useState<ProfileData | null>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   useEffect(() => {
     fetch('/api/profile/data')
@@ -29,6 +30,23 @@ export function Profile() {
       .then(setData)
       .catch(console.error);
   }, []);
+
+  const handleCheckout = async () => {
+    setCheckoutLoading(true);
+    try {
+      const res = await fetch('/api/user/checkout', { method: 'POST' });
+      const json = await res.json();
+      if (json.success && json.payment_url) {
+        window.location.href = json.payment_url;
+      } else {
+        alert(json.error || 'Gagal memulai proses pembayaran');
+      }
+    } catch (e) {
+      alert('Terjadi kesalahan, silakan coba lagi');
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
 
   if (!data) return <div className="text-center pt-32 text-zinc-500 flex flex-col items-center gap-4">
     <div className="w-8 h-8 border-4 border-rose-500 border-t-transparent rounded-full animate-spin"></div>
@@ -96,6 +114,20 @@ export function Profile() {
                 <div className="text-lg font-bold text-rose-400">{data.upgrade?.limit || 'Unlimited'}</div>
               </div>
            </div>
+           
+           <button 
+             onClick={handleCheckout}
+             disabled={checkoutLoading || data.user?.type === 'VIP'}
+             className="w-full mt-4 flex items-center justify-center gap-2 bg-white text-rose-600 hover:bg-zinc-200 font-bold py-3.5 rounded-xl transition-all shadow-lg disabled:opacity-50 disabled:pointer-events-none"
+           >
+             {checkoutLoading ? (
+               <Loader2 className="w-5 h-5 animate-spin" />
+             ) : data.user?.type === 'VIP' ? (
+               'Anda telah menjadi VIP'
+             ) : (
+               'Bayar Sekarang'
+             )}
+           </button>
         </div>
       </div>
 

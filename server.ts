@@ -30,7 +30,8 @@ let adminData = {
     price: 'Rp 50.000 / Bulan',
     limit: 'Unlimited'
   },
-  adminPassword: 'admin'
+  adminPassword: 'admin',
+  paymentApiKey: ''
 };
 
 // Get or create user based on IP and User-Agent
@@ -106,6 +107,44 @@ async function startServer() {
       res.json({ success: true });
     } else {
       res.status(401).json({ success: false, error: 'Incorrect current password' });
+    }
+  });
+
+  app.post("/api/admin/update-payment-key", (req, res) => {
+    adminData.paymentApiKey = req.body.paymentApiKey;
+    res.json({ success: true });
+  });
+
+  app.post("/api/user/checkout", async (req, res) => {
+    const user = getOrCreateUser(req);
+    const amountStr = adminData.upgrade.price.replace(/[^0-9]/g, '');
+    const amount = parseInt(amountStr, 10) || 50000;
+
+    try {
+      const response = await fetch('https://paymenku.com/api/v1/transaction/create', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${adminData.paymentApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          reference_id: `INV-${Date.now()}-${user.id}`,
+          amount: amount,
+          customer_name: user.name || 'User Premium',
+          customer_email: `user${user.id}@example.com`,
+          channel_code: 'qris',
+          return_url: `${req.protocol}://${req.get('host')}/profile`
+        })
+      });
+      
+      if (response.ok) {
+        const responseData = await response.json();
+        res.json({ success: true, payment_url: responseData.data?.checkout_url || responseData.checkout_url || responseData.payment_url || '' });
+      } else {
+        res.status(500).json({ success: false, error: 'Gagal membuat transaksi' });
+      }
+    } catch (error) {
+      res.status(500).json({ success: false, error: 'Terjadi kesalahan sistem' });
     }
   });
 
