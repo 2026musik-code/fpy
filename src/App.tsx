@@ -18,7 +18,7 @@ export default function App() {
           <Route path="/search" element={<><Navbar /><Search /></>} />
           <Route path="/history" element={<><Navbar /><History /></>} />
           <Route path="/profile" element={<><Navbar /><Profile /></>} />
-          <Route path="/admin" element={<><Navbar /><Admin /></>} />
+          <Route path="/admin" element={<Admin />} />
           <Route path="/play/:id" element={<DramaPlayer />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

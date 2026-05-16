@@ -50,6 +50,27 @@ const saveAdminData = async (c: any, data: any) => {
   }
 };
 
+const getOrCreateUser = async (c: any, data: any) => {
+  const ipRaw = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || '127.0.0.1';
+  const ip = ipRaw.split(',')[0].trim();
+  const userAgent = c.req.header('user-agent') || 'Unknown Browser';
+  
+  let user = data.users.find((u: any) => u.ip === ip && u.userAgent === userAgent);
+  if (!user) {
+    user = {
+      id: Date.now().toString(),
+      name: 'Guest User',
+      type: 'Free',
+      limit: 5,
+      ip: ip,
+      userAgent: userAgent
+    };
+    data.users.push(user);
+    await saveAdminData(c, data);
+  }
+  return user;
+};
+
 app.get('/api/admin/data', async (c) => {
   const data = await getAdminData(c);
   return c.json(data);
@@ -101,8 +122,7 @@ app.delete('/api/admin/delete-user/:id', async (c) => {
 
 app.get('/api/profile/data', async (c) => {
   const data = await getAdminData(c);
-  // Simulating the current user (e.g. User with id=1)
-  const user = data.users[0] || { name: 'Guest User', type: 'Free', limit: 5, ip: '127.0.0.1', userAgent: 'Browser' };
+  const user = await getOrCreateUser(c, data);
   
   return c.json({
     user,
@@ -117,6 +137,23 @@ app.get('/api/provider/:providerId', async (c) => {
     const providerId = c.req.param('providerId');
     const url = new URL(c.req.url);
     const params = url.searchParams;
+
+    if (params.get('action') === 'stream') {
+      const adminData = await getAdminData(c);
+      const user = await getOrCreateUser(c, adminData);
+      
+      if (user.limit <= 0) {
+        return c.json({
+          limitReached: true,
+          popup: adminData.popup,
+          contact: adminData.contact
+        }, 403);
+      }
+      
+      user.limit -= 1;
+      await saveAdminData(c, adminData);
+    }
+
     const targetUrl = `https://www.cutad.web.id/api/public/${providerId}?${params.toString()}`;
     
     const proxyRes = await fetch(targetUrl);
