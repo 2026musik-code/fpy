@@ -294,6 +294,10 @@ app.get('/api/provider/:providerId', async (c) => {
     const providerId = c.req.param('providerId');
     const url = new URL(c.req.url);
     const params = url.searchParams;
+    
+    // Inject API key server-side from environment variable so it's not exposed to client
+    const cutadKey = (c.env && (c.env as any).CUTAD_KEY) || process.env.CUTAD_KEY || "cutad_98e7ba3c88fdfe5526740ed69f59fc71267f4a69";
+    params.set('key', cutadKey);
 
     if (params.get('action') === 'stream') {
       const adminData = await getAdminData(c);

@@ -241,6 +241,11 @@ async function startServer() {
     try {
       const provider = req.params.providerId;
       const params = new URLSearchParams(req.query as any);
+      
+      // Inject API key server-side from environment variable so it's not exposed to client
+      const cutadKey = process.env.CUTAD_KEY || "cutad_98e7ba3c88fdfe5526740ed69f59fc71267f4a69";
+      params.set('key', cutadKey);
+      
       const targetUrl = `https://www.cutad.web.id/api/public/${provider}?${params.toString()}`;
       console.log(`Proxying ${targetUrl}`);
       
