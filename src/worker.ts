@@ -295,8 +295,13 @@ app.get('/api/provider/:providerId', async (c) => {
     const url = new URL(c.req.url);
     const params = url.searchParams;
     
-    // Inject API key server-side from environment variable so it's not exposed to client
-    const cutadKey = (c.env && (c.env as any).CUTAD_KEY) || process.env.CUTAD_KEY || "cutad_98e7ba3c88fdfe5526740ed69f59fc71267f4a69";
+    // Access env key properly avoiding ReferenceError in CF
+    let cutadKey = "cutad_98e7ba3c88fdfe5526740ed69f59fc71267f4a69";
+    if (c.env && (c.env as any).CUTAD_KEY) {
+      cutadKey = (c.env as any).CUTAD_KEY;
+    } else if (typeof process !== 'undefined' && process.env && process.env.CUTAD_KEY) {
+      cutadKey = process.env.CUTAD_KEY;
+    }
     params.set('key', cutadKey);
 
     if (params.get('action') === 'stream') {

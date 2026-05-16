@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { Readable } from 'stream';
+import "dotenv/config";
 
 // Disable TLS verification for proxy
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
