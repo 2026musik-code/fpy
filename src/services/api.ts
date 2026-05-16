@@ -102,6 +102,12 @@ export const fypApi = {
   },
   getStream: async (episodeId: string): Promise<any> => {
     const res = await fetch(`${BASE_URL}/provider/${fypApi.getProvider()}?action=stream&id=${encodeURIComponent(episodeId)}&key=${API_KEY}`);
+    
+    if (res.status === 403) {
+      const errorJson = await res.json();
+      return { limitReached: true, data: errorJson };
+    }
+    
     const json = await res.json();
     let url = json.data?.url || json.data?.videoUrl || json.data?.playUrl || json.data?.streams?.[0]?.url || "";
     

@@ -208,6 +208,7 @@ function VideoItem({ episode, isActive, isAdjacent, onEnded }: { key?: string | 
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [showControls, setShowControls] = useState(false);
+  const [limitData, setLimitData] = useState<any>(null); // For popup data
   const timerRef = useRef<NodeJS.Timeout>();
   const playPromiseRef = useRef<Promise<void> | null>(null);
   const isActiveRef = useRef(isActive);
@@ -232,12 +233,14 @@ function VideoItem({ episode, isActive, isAdjacent, onEnded }: { key?: string | 
 
   // Initialize streamUrl
   useEffect(() => {
-    if (isAdjacent && !streamUrl) {
+    if (isAdjacent && !streamUrl && !limitData) {
       const fetchUrl = async () => {
         const id = episode.videoFakeId || episode.id || episode.fakeId;
         if (id) {
           const streamData = await fypApi.getStream(id);
-          if (streamData && streamData.url) {
+          if (streamData && streamData.limitReached) {
+             setLimitData(streamData.data);
+          } else if (streamData && streamData.url) {
             setStreamUrl(streamData.url);
             setOriginalUrl(streamData.originalUrl);
             setSubtitles(streamData.subtitles || []);
@@ -248,7 +251,7 @@ function VideoItem({ episode, isActive, isAdjacent, onEnded }: { key?: string | 
       };
       fetchUrl();
     }
-  }, [isAdjacent, streamUrl, episode]);
+  }, [isAdjacent, streamUrl, episode, limitData]);
 
   const playVideo = useCallback(() => {
     if (isActiveRef.current && videoRef.current && videoRef.current.readyState >= 2) {
@@ -488,6 +491,30 @@ function VideoItem({ episode, isActive, isAdjacent, onEnded }: { key?: string | 
           style={{ width: duration > 0 ? `${(progress / duration) * 100}%` : '0%' }} 
         />
       </div>
+
+      {/* Limit Popup Overlay */}
+      {limitData && isActive && (
+        <div className="absolute inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-zinc-900 border border-white/10 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95 duration-300">
+            {limitData.popup?.image && (
+              <img src={limitData.popup.image} alt="Banner" className="w-full h-32 object-cover rounded-xl mb-4" />
+            )}
+            <h3 className="text-xl font-bold mb-2">Limit Tercapai</h3>
+            <p className="text-zinc-400 text-sm mb-6">{limitData.popup?.text || 'Batas tontonan gratis telah habis.'}</p>
+            <div className="flex flex-col gap-3">
+              <a href={`https://wa.me/${limitData.contact?.wa}`} target="_blank" rel="noreferrer" className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl transition-colors w-full text-sm">
+                Hubungi WhatsApp
+              </a>
+              <a href={`https://t.me/${limitData.contact?.telegram}`} target="_blank" rel="noreferrer" className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-colors w-full text-sm">
+                Hubungi Telegram
+              </a>
+              <a href="/profile" className="bg-zinc-800 hover:bg-zinc-700 text-white font-bold py-3 rounded-xl transition-colors w-full text-sm mt-2">
+                Lihat Info Upgrade
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

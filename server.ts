@@ -32,6 +32,30 @@ let adminData = {
   }
 };
 
+// Get or create user based on IP and User-Agent
+function getOrCreateUser(req: any) {
+  const ipRaw = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
+  const ip = typeof ipRaw === 'string' ? ipRaw.split(',')[0].trim() : ipRaw;
+  const userAgent = req.headers['user-agent'] || 'Unknown Browser';
+  
+  // Find existing user based on IP and UserAgent
+  // But wait, the admin pane might have mock users.
+  // We will assign a hash or just use combination
+  let user = adminData.users.find(u => u.ip === ip && u.userAgent === userAgent);
+  if (!user) {
+    user = {
+      id: Date.now().toString(),
+      name: 'Guest User',
+      type: 'Free',
+      limit: 5, // Default limit
+      ip: ip,
+      userAgent: userAgent
+    };
+    adminData.users.push(user);
+  }
+  return user;
+}
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -59,7 +83,7 @@ async function startServer() {
   });
 
   app.get("/api/profile/data", (req, res) => {
-    const user = adminData.users[0] || { name: 'Guest User', type: 'Free', limit: 5, ip: '127.0.0.1', userAgent: 'Browser' };
+    const user = getOrCreateUser(req);
     res.json({
       user,
       contacts: adminData.contact,
@@ -91,6 +115,20 @@ async function startServer() {
       const params = new URLSearchParams(req.query as any);
       const targetUrl = `https://www.cutad.web.id/api/public/${provider}?${params.toString()}`;
       console.log(`Proxying ${targetUrl}`);
+      
+      if (req.query.action === 'stream') {
+        const user = getOrCreateUser(req);
+        if (user.limit <= 0) {
+          return res.status(403).json({
+            error: "LIMIT_REACHED",
+            popup: adminData.popup,
+            contact: adminData.contact
+          });
+        }
+        // Deduct limit (simple implementation, but in a real app, maybe per episode avoid double decrement)
+        user.limit -= 1;
+      }
+      
       const proxyRes = await fetch(targetUrl);
       const text = await proxyRes.text();
       try {
