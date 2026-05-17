@@ -17,6 +17,7 @@ export function DramaPlayer() {
   const [showDrawer, setShowDrawer] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     if (!id) return;
@@ -55,23 +56,40 @@ export function DramaPlayer() {
 
   const handleScroll = useCallback(() => {
     if (!containerRef.current) return;
-    const scrollPositions = Array.from(containerRef.current.children).map(child => {
-      const rect = (child as HTMLElement).getBoundingClientRect();
-      // Center of screen
-      return Math.abs(rect.top + rect.height / 2 - window.innerHeight / 2);
-    });
-    const minDiff = Math.min(...scrollPositions);
-    const index = scrollPositions.indexOf(minDiff);
-    if (index !== -1 && index !== activeIdx) {
-      setActiveIdx(index);
+    
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
     }
+    
+    // Debounce to prevent intermediate activeIdx updates while scrolling
+    scrollTimeoutRef.current = setTimeout(() => {
+      if (!containerRef.current) return;
+      const scrollPositions = Array.from(containerRef.current.children).map(child => {
+        const rect = (child as HTMLElement).getBoundingClientRect();
+        // Center of screen
+        return Math.abs(rect.top + rect.height / 2 - window.innerHeight / 2);
+      });
+      const minDiff = Math.min(...scrollPositions);
+      const index = scrollPositions.indexOf(minDiff);
+      if (index !== -1 && index !== activeIdx) {
+        setActiveIdx(index);
+      }
+    }, 150);
   }, [activeIdx]);
+
+  useEffect(() => {
+    return () => {
+      // Cleanup timeout on unmount
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    };
+  }, []);
 
   const scrollToIdx = (idx: number) => {
     if (!containerRef.current) return;
     const child = containerRef.current.children[idx] as HTMLElement;
     if (child) {
-      child.scrollIntoView({ behavior: 'smooth' });
+      const isFar = Math.abs(activeIdx - idx) > 1;
+      child.scrollIntoView({ behavior: isFar ? 'auto' : 'smooth' });
       setActiveIdx(idx);
     }
   };
