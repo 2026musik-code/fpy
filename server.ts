@@ -35,27 +35,29 @@ let adminData = {
   paymentApiKey: ''
 };
 
-// Get or create user based on IP and User-Agent
+// Get or create user based on x-user-id header
 function getOrCreateUser(req: any) {
+  const reqUserId = req.headers['x-user-id'];
+  if (reqUserId) {
+    let user = adminData.users.find(u => u.id === reqUserId);
+    if (user) {
+      return user;
+    }
+  }
+
   const ipRaw = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '127.0.0.1';
   const ip = typeof ipRaw === 'string' ? ipRaw.split(',')[0].trim() : ipRaw;
   const userAgent = req.headers['user-agent'] || 'Unknown Browser';
   
-  // Find existing user based on IP and UserAgent
-  // But wait, the admin pane might have mock users.
-  // We will assign a hash or just use combination
-  let user = adminData.users.find(u => u.ip === ip && u.userAgent === userAgent);
-  if (!user) {
-    user = {
-      id: Date.now().toString(),
-      name: 'Guest User',
-      type: 'Free',
-      limit: 5, // Default limit
-      ip: ip,
-      userAgent: userAgent
-    };
-    adminData.users.push(user);
-  }
+  const user = {
+    id: Date.now().toString(),
+    name: 'Guest User',
+    type: 'Free',
+    limit: 5, // Default limit
+    ip: ip,
+    userAgent: userAgent
+  };
+  adminData.users.push(user);
   return user;
 }
 
@@ -64,6 +66,20 @@ async function startServer() {
   const PORT = 3000;
 
   app.use(express.json({ limit: '10mb' }));
+
+  app.post("/api/user/guest", (req, res) => {
+    const user = getOrCreateUser(req);
+    res.json({ success: true, user });
+  });
+
+  app.post("/api/user/login", (req, res) => {
+    const user = adminData.users.find(u => u.id === req.body.id);
+    if (user) {
+      res.json({ success: true, user });
+    } else {
+      res.status(404).json({ success: false, error: 'ID tidak ditemukan' });
+    }
+  });
 
   // Security Middleware to block scrapers
   app.use((req, res, next) => {
@@ -170,7 +186,7 @@ async function startServer() {
           customer_name: user.name || 'User Premium',
           customer_email: `user${user.id}@example.com`,
           channel_code: 'qris',
-          return_url: `${req.protocol}://${req.get('host')}/profile`,
+          return_url: `${req.protocol}://${req.get('host')}/profile?payment=success`,
           callback_url: `${req.protocol}://${req.get('host')}/api/payment/callback`,
           webhook_url: `${req.protocol}://${req.get('host')}/api/payment/callback`
         })

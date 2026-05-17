@@ -1,8 +1,10 @@
-import { UserCircle, Settings, LogOut, Shield, Zap, MessageCircle, Send, Loader2 } from 'lucide-react';
+import { UserCircle, Settings, LogOut, Shield, Zap, MessageCircle, Send, Loader2, CheckCircle2, Copy } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 interface ProfileData {
   user: {
+    id: string;
     name: string;
     type: string;
     limit: number;
@@ -23,18 +25,56 @@ interface ProfileData {
 export function Profile() {
   const [data, setData] = useState<ProfileData | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
-
+  const [searchParams, setSearchParams] = useSearchParams();
+  const paymentSuccess = searchParams.get('payment') === 'success';
+  const [showPopup, setShowPopup] = useState(paymentSuccess);
+  
   useEffect(() => {
-    fetch('/api/profile/data')
-      .then(res => res.json())
-      .then(setData)
-      .catch(console.error);
-  }, []);
+    let pollingInterval: any;
+    
+    const fetchData = async () => {
+      const userId = localStorage.getItem('userId') || '';
+      try {
+        const res = await fetch('/api/profile/data', {
+          headers: { 'x-user-id': userId }
+        });
+        const json = await res.json();
+        setData(json);
+        
+        // Polling if VIP
+        if (paymentSuccess && json.user?.type !== 'VIP') {
+           // not VIP yet, poll again
+        } else if (paymentSuccess && json.user?.type === 'VIP') {
+           // Success! Stop polling and ensure popup is shown
+           setShowPopup(true);
+           if (pollingInterval) clearInterval(pollingInterval);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    
+    fetchData();
+    window.addEventListener('user-login', fetchData);
+    
+    if (paymentSuccess) {
+       pollingInterval = setInterval(fetchData, 3000);
+    }
+    
+    return () => {
+      window.removeEventListener('user-login', fetchData);
+      if (pollingInterval) clearInterval(pollingInterval);
+    };
+  }, [paymentSuccess]);
 
   const handleCheckout = async () => {
     setCheckoutLoading(true);
     try {
-      const res = await fetch('/api/user/checkout', { method: 'POST' });
+      const userId = localStorage.getItem('userId') || '';
+      const res = await fetch('/api/user/checkout', { 
+        method: 'POST',
+        headers: { 'x-user-id': userId }
+      });
       const json = await res.json();
       if (json.success && json.payment_url) {
         window.location.href = json.payment_url;
@@ -56,6 +96,56 @@ export function Profile() {
   return (
     <main className="min-h-screen pt-20 md:pt-28 pb-24 px-4 max-w-xl mx-auto flex flex-col gap-6">
       
+      {showPopup && data.user?.type === 'VIP' && (
+        <div className="fixed inset-0 z-50 bg-zinc-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in zoom-in duration-300">
+          <div className="bg-zinc-900 border border-rose-500/30 w-full max-w-sm rounded-3xl p-6 shadow-2xl relative">
+            <div className="absolute -top-12 left-1/2 -translate-x-1/2">
+              <div className="w-24 h-24 bg-rose-500 rounded-full flex items-center justify-center shadow-lg shadow-rose-500/40 border-[6px] border-zinc-900">
+                <CheckCircle2 className="w-12 h-12 text-white" />
+              </div>
+            </div>
+            
+            <div className="mt-10 text-center mb-6">
+              <h2 className="text-2xl font-black text-rose-400 mb-1">Pembayaran Berhasil!</h2>
+              <p className="text-sm text-zinc-400">Akun Anda telah diupgrade ke VIP.</p>
+            </div>
+            
+            <div className="bg-black/50 border border-white/5 rounded-2xl p-4 space-y-3 mb-6">
+              <DetailRow label="ID Pengguna" value={data.user.id} highlight />
+              <DetailRow label="Status" value="Aktif (VIP)" />
+              <DetailRow label="Limit Views" value="Unlimited" highlight />
+              <DetailRow label="Harga" value={data.upgrade?.price || 'Lunas'} />
+              <DetailRow label="Tipe Akun" value={data.user.type} />
+            </div>
+
+            <div className="text-center mb-6 flex flex-col items-center gap-2">
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(data.user.id);
+                  alert('ID dicopy ke clipboard!');
+                }}
+                className="flex items-center gap-2 text-xs font-semibold text-rose-400 bg-rose-500/10 px-4 py-2 rounded-xl"
+              >
+                <Copy className="w-4 h-4" /> Simpan ID Anda
+              </button>
+            </div>
+            
+            <button
+               onClick={() => {
+                 setShowPopup(false);
+                 setSearchParams({});
+                 // Force login/reload
+                 localStorage.removeItem('userId');
+                 window.location.href = '/';
+               }}
+               className="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-3.5 rounded-xl transition-all"
+            >
+               Login Ulang
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header Logo & Basic Info */}
       <div className="flex flex-col items-center mt-4">
         <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-rose-500 to-orange-400 p-1 mb-4 shadow-xl">
@@ -77,6 +167,7 @@ export function Profile() {
         </h3>
         
         <div className="space-y-4">
+          <DetailRow label="ID Pengguna" value={data.user?.id || '-'} highlight />
           <DetailRow label="Nama" value={data.user?.name || '-'} />
           <DetailRow label="Jenis User" value={data.user?.type || '-'} />
           <DetailRow label="Limit" value={`${data.user?.limit || 0} Views`} highlight />
@@ -151,7 +242,13 @@ export function Profile() {
       </div>
 
       <div className="flex items-center justify-end mt-4">
-        <button className="flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-semibold text-rose-500 hover:text-white hover:bg-rose-500 transition-colors">
+        <button 
+          onClick={() => {
+            localStorage.removeItem('userId');
+            window.location.href = '/';
+          }}
+          className="flex items-center gap-2 py-2 px-4 rounded-xl text-xs font-semibold text-rose-500 hover:text-white hover:bg-rose-500 transition-colors"
+        >
           <LogOut className="w-4 h-4" /> Sign Out
         </button>
       </div>

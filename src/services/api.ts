@@ -1,5 +1,12 @@
 const BASE_URL = "/api";
 
+export const getUserId = () => localStorage.getItem('userId') || '';
+
+const fetchWithUser = async (url: string, options: any = {}) => {
+  const headers = { ...options.headers, 'x-user-id': getUserId() };
+  return fetch(url, { ...options, headers });
+};
+
 export interface Drama {
   id?: string;
   fakeId?: string;
@@ -41,7 +48,7 @@ export const fypApi = {
     window.dispatchEvent(new Event('provider-changed'));
   },
   getRank: async (): Promise<Drama[]> => {
-    const res = await fetch(`${BASE_URL}/provider/${fypApi.getProvider()}?action=rank`);
+    const res = await fetchWithUser(`${BASE_URL}/provider/${fypApi.getProvider()}?action=rank`);
     const json = await res.json();
     let dataArray = json.data;
     if (dataArray && !Array.isArray(dataArray)) {
@@ -60,7 +67,7 @@ export const fypApi = {
   },
   search: async (q: string, providerId: string): Promise<Drama[]> => {
     try {
-      const res = await fetch(`${BASE_URL}/provider/${providerId}?action=search&q=${encodeURIComponent(q)}`);
+      const res = await fetchWithUser(`${BASE_URL}/provider/${providerId}?action=search&q=${encodeURIComponent(q)}`);
       const json = await res.json();
       let dataArray = json.data;
       if (dataArray && !Array.isArray(dataArray)) {
@@ -83,7 +90,7 @@ export const fypApi = {
     }
   },
   getEpisodes: async (id: string): Promise<Episode[]> => {
-    const res = await fetch(`${BASE_URL}/provider/${fypApi.getProvider()}?action=episodes&id=${id}`);
+    const res = await fetchWithUser(`${BASE_URL}/provider/${fypApi.getProvider()}?action=episodes&id=${id}`);
     const json = await res.json();
     return (json.data || []).map((item: any, idx: number) => ({
       ...item,
@@ -95,12 +102,12 @@ export const fypApi = {
     }));
   },
   getDetail: async (id: string): Promise<any> => {
-    const res = await fetch(`${BASE_URL}/provider/${fypApi.getProvider()}?action=detail&id=${id}`);
+    const res = await fetchWithUser(`${BASE_URL}/provider/${fypApi.getProvider()}?action=detail&id=${id}`);
     const json = await res.json();
     return json.data;
   },
   getStream: async (episodeId: string): Promise<any> => {
-    const res = await fetch(`${BASE_URL}/provider/${fypApi.getProvider()}?action=stream&id=${encodeURIComponent(episodeId)}`);
+    const res = await fetchWithUser(`${BASE_URL}/provider/${fypApi.getProvider()}?action=stream&id=${encodeURIComponent(episodeId)}`);
     
     if (res.status === 403) {
       const errorJson = await res.json();

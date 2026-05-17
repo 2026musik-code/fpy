@@ -100,25 +100,49 @@ const saveAdminData = async (c: any, data: any) => {
 };
 
 const getOrCreateUser = async (c: any, data: any) => {
+  const reqUserId = c.req.header('x-user-id');
+  if (reqUserId) {
+    let user = data.users.find((u: any) => u.id === reqUserId);
+    if (user) {
+      return user;
+    }
+  }
+  
+  // Create if missing or explicitly requested as Guest
   const ipRaw = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || '127.0.0.1';
   const ip = ipRaw.split(',')[0].trim();
   const userAgent = c.req.header('user-agent') || 'Unknown Browser';
   
-  let user = data.users.find((u: any) => u.ip === ip && u.userAgent === userAgent);
-  if (!user) {
-    user = {
-      id: Date.now().toString(),
-      name: 'Guest User',
-      type: 'Free',
-      limit: 5,
-      ip: ip,
-      userAgent: userAgent
-    };
-    data.users.push(user);
-    await saveAdminData(c, data);
-  }
+  const user = {
+    id: Date.now().toString(),
+    name: 'Guest User',
+    type: 'Free',
+    limit: 5,
+    ip: ip,
+    userAgent: userAgent
+  };
+  data.users.push(user);
+  await saveAdminData(c, data);
   return user;
 };
+
+app.post('/api/user/guest', async (c) => {
+  const data = await getAdminData(c);
+  const user = await getOrCreateUser(c, data);
+  return c.json({ success: true, user });
+});
+
+app.post('/api/user/login', async (c) => {
+  const body = await c.req.json();
+  const data = await getAdminData(c);
+  const user = data.users.find((u: any) => u.id === body.id);
+  
+  if (user) {
+    return c.json({ success: true, user });
+  } else {
+    return c.json({ success: false, error: 'ID tidak ditemukan' });
+  }
+});
 
 app.get('/api/admin/data', async (c) => {
   const data = await getAdminData(c);
@@ -196,7 +220,7 @@ app.post('/api/user/checkout', async (c) => {
         customer_name: user.name || 'User Premium',
         customer_email: `user${user.id}@example.com`,
         channel_code: 'qris',
-        return_url: `${new URL(c.req.url).origin}/profile`,
+        return_url: `${new URL(c.req.url).origin}/profile?payment=success`,
         callback_url: `${new URL(c.req.url).origin}/api/payment/callback`,
         webhook_url: `${new URL(c.req.url).origin}/api/payment/callback`
       })
