@@ -234,14 +234,17 @@ function VideoItem({ episode, isActive, isAdjacent, onEnded }: { key?: string | 
     }
   };
 
-  // Initialize streamUrl
+  // Initialize streamUrl only when active to save network and memory
   useEffect(() => {
-    if (isAdjacent && !streamUrl && !limitData) {
+    if (isActive && !streamUrl && !limitData) {
       const fetchUrl = async () => {
         const id = episode.videoFakeId || episode.id || episode.fakeId;
         if (id) {
           try {
             const streamData = await fypApi.getStream(id);
+            // Verify if still active before setting state to avoid race conditions
+            if (!isActiveRef.current) return;
+            
             if (streamData && streamData.limitReached) {
                setLimitData(streamData.data);
             } else if (streamData && streamData.url) {
@@ -249,7 +252,6 @@ function VideoItem({ episode, isActive, isAdjacent, onEnded }: { key?: string | 
               setOriginalUrl(streamData.originalUrl);
               setSubtitles(streamData.subtitles || []);
               
-              // Set default subtitle
               const subs = streamData.subtitles || [];
               if (subs.length > 0) {
                 let idx = subs.findIndex((s: any) => s.label === "Indonesia" || s.lang === "id-ID" || s.label?.toLowerCase() === "indonesian");
@@ -263,9 +265,21 @@ function VideoItem({ episode, isActive, isAdjacent, onEnded }: { key?: string | 
           }
         }
       };
-      fetchUrl();
+      
+      // small delay to prevent rapid fetching when fast-scrolling
+      const timeoutId = setTimeout(fetchUrl, 300);
+      return () => clearTimeout(timeoutId);
     }
-  }, [isAdjacent, streamUrl, episode, limitData]);
+  }, [isActive, streamUrl, episode, limitData]);
+
+  // Cleanup old data when scrolling away
+  useEffect(() => {
+    if (!isActive && streamUrl) {
+      setStreamUrl(undefined);
+      setSubtitles([]);
+      setActiveSubId(-1);
+    }
+  }, [isActive, streamUrl]);
 
   const playVideo = useCallback(() => {
     if (isActiveRef.current && videoRef.current && videoRef.current.readyState >= 2) {
@@ -447,7 +461,7 @@ function VideoItem({ episode, isActive, isAdjacent, onEnded }: { key?: string | 
     <div className="h-full w-full flex-shrink-0 snap-start snap-always relative bg-black group" onClick={togglePlay}>
       {/* Cover image or placeholder if outside render distance */}
       {!isAdjacent && episode.cover && (
-        <img src={episode.cover} className="w-full h-full object-cover opacity-50" alt="" referrerPolicy="no-referrer" />
+        <img src={episode.cover} className="w-full h-full object-cover opacity-50" alt="" referrerPolicy="no-referrer" loading="lazy" />
       )}
       
       {isAdjacent && (
