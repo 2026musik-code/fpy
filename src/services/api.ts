@@ -18,7 +18,14 @@ export interface Drama {
   provider?: string;
 }
 
-export const PROVIDERS = [
+export interface Provider {
+  id: string;
+  name: string;
+  url: string;
+  icon?: string;
+}
+
+export let PROVIDERS: Provider[] = [
   { id: 'netshort', name: 'NetShort', url: 'https://www.netshort.com' },
   { id: 'reelshort', name: 'ReelShort', url: 'https://www.reelshort.com' },
   { id: 'freereels', name: 'FreeReels', url: 'https://www.freereels.com' },
@@ -40,6 +47,18 @@ export interface Episode {
 }
 
 export const fypApi = {
+  loadProviders: async () => {
+    try {
+      const res = await fetch('/api/providers');
+      const json = await res.json();
+      if (json.success && json.providers && Array.isArray(json.providers)) {
+        PROVIDERS.splice(0, PROVIDERS.length, ...json.providers);
+      }
+      return PROVIDERS;
+    } catch(err) {
+      return PROVIDERS;
+    }
+  },
   getProvider: () => {
     return localStorage.getItem('fyp_provider') || 'netshort';
   },

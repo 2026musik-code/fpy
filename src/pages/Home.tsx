@@ -7,8 +7,13 @@ import { motion, AnimatePresence } from 'motion/react';
 
 export function Home() {
   const [trending, setTrending] = useState<Drama[]>([]);
+  const [providers, setProviders] = useState(PROVIDERS);
   const [loading, setLoading] = useState(true);
   const [activeProvider, setActiveProvider] = useState(fypApi.getProvider());
+
+  useEffect(() => {
+    fypApi.loadProviders().then(p => setProviders([...p]));
+  }, []);
 
   useEffect(() => {
     const fetchRank = async () => {
@@ -70,7 +75,7 @@ export function Home() {
             show: { transition: { staggerChildren: 0.05 } }
           }}
         >
-          {PROVIDERS.map(p => (
+          {providers.map(p => (
             <motion.button
               variants={{
                 hidden: { opacity: 0, scale: 0.8 },

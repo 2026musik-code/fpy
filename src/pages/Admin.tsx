@@ -9,6 +9,7 @@ interface AdminData {
   users: Array<{ id: string; name: string; type: string; limit: number; ip: string; userAgent: string }>;
   traffic: Array<{ provider: string; views: number }>;
   paymentApiKey: string;
+  providers: Array<{ id: string; name: string; url: string; icon?: string }>;
 }
 
 export function Admin() {
@@ -33,6 +34,7 @@ export function Admin() {
   const [upgradePrice, setUpgradePrice] = useState('');
   const [upgradeLimit, setUpgradeLimit] = useState('');
   const [paymentApiKey, setPaymentApiKey] = useState('');
+  const [providers, setProviders] = useState<Array<{ id: string; name: string; url: string; icon?: string }>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -113,6 +115,7 @@ export function Admin() {
         setUpgradePrice(json.upgrade?.price || '');
         setUpgradeLimit(json.upgrade?.limit || '');
         setPaymentApiKey(json.paymentApiKey || '');
+        setProviders(json.providers || []);
       }
     } catch (e) {
       console.error(e);
@@ -150,6 +153,23 @@ export function Admin() {
       alert('Contacts saved successfully');
     } catch (e) {
       alert('Failed to save contacts');
+    }
+  };
+
+  const saveProviders = async () => {
+    try {
+      await fetch('/api/admin/update-providers', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-admin-password': sessionStorage.getItem('adminToken') || ''
+        },
+        body: JSON.stringify({ providers })
+      });
+      alert('Providers saved successfully. They will be reflected across the app.');
+      window.dispatchEvent(new Event('provider-changed'));
+    } catch (e) {
+      alert('Failed to save providers');
     }
   };
 
@@ -366,6 +386,7 @@ export function Admin() {
             <MenuButton active={activeTab === 'popup'} onClick={() => setActiveTab('popup')} icon={<MessageCircle className="w-4 h-4" />} label="Limit Popup" />
             <MenuButton active={activeTab === 'upgrade'} onClick={() => setActiveTab('upgrade')} icon={<Settings className="w-4 h-4" />} label="Upgrade Packages" />
             <MenuButton active={activeTab === 'traffic'} onClick={() => setActiveTab('traffic')} icon={<Activity className="w-4 h-4" />} label="Network Traffic" />
+            <MenuButton active={activeTab === 'providers'} onClick={() => setActiveTab('providers')} icon={<BarChart2 className="w-4 h-4" />} label="Providers" />
             <MenuButton active={activeTab === 'contact'} onClick={() => setActiveTab('contact')} icon={<MessageCircle className="w-4 h-4" />} label="Support Contacts" />
             <MenuButton active={activeTab === 'security'} onClick={() => setActiveTab('security')} icon={<Lock className="w-4 h-4" />} label="Security Settings" />
             <MenuButton active={activeTab === 'payment'} onClick={() => setActiveTab('payment')} icon={<CreditCard className="w-4 h-4" />} label="Payment Gateway" />
@@ -553,6 +574,94 @@ export function Admin() {
                         <Save className="w-4 h-4" /> Publish Package
                       </button>
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Providers Tab */}
+              {activeTab === 'providers' && (
+                <div className="space-y-8 max-w-4xl">
+                  <div>
+                    <h3 className="text-2xl font-black text-white tracking-tight">Providers configuration</h3>
+                    <p className="text-sm text-zinc-400 mt-1">Manage video providers and their logo icons.</p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {providers.map((p, index) => (
+                      <div key={p.id} className="flex gap-4 items-center bg-black/20 border border-white/5 p-4 rounded-2xl">
+                        <div className="w-16 h-16 bg-zinc-900 border border-white/10 rounded-xl overflow-hidden flex items-center justify-center shrink-0">
+                          <img src={p.icon || `https://www.google.com/s2/favicons?domain=${p.url}&sz=128`} alt={p.name} className="w-full h-full object-contain" />
+                        </div>
+                        <div className="flex-1 space-y-3">
+                          <div className="flex gap-3">
+                            <input 
+                              type="text" 
+                              value={p.name} 
+                              onChange={(e) => {
+                                const newP = [...providers];
+                                newP[index].name = e.target.value;
+                                setProviders(newP);
+                              }}
+                              className="w-1/3 bg-zinc-950/50 border border-zinc-800 rounded-xl px-4 py-2 text-sm text-zinc-200 focus:outline-none focus:border-rose-500 transition-colors"
+                              placeholder="Name"
+                            />
+                            <input 
+                              type="text" 
+                              value={p.url} 
+                              onChange={(e) => {
+                                const newP = [...providers];
+                                newP[index].url = e.target.value;
+                                setProviders(newP);
+                              }}
+                              className="flex-1 bg-zinc-950/50 border border-zinc-800 rounded-xl px-4 py-2 text-sm text-zinc-200 focus:outline-none focus:border-rose-500 transition-colors"
+                              placeholder="URL"
+                            />
+                          </div>
+                          <div>
+                            <input 
+                              type="file" 
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    const newP = [...providers];
+                                    newP[index].icon = reader.result as string;
+                                    setProviders(newP);
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                              className="text-xs text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-white/10 file:text-white hover:file:bg-white/20"
+                            />
+                            <p className="text-[10px] text-zinc-500 mt-1">Upload a custom logo to replace the default favicon.</p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            const newP = providers.filter((_, i) => i !== index);
+                            setProviders(newP);
+                          }}
+                          className="w-10 h-10 hover:bg-white/10 rounded-full flex items-center justify-center text-zinc-500 hover:text-red-400 transition"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex justify-between border-t border-white/5 pt-6">
+                    <button 
+                      onClick={() => setProviders([...providers, { id: 'new_prov_' + Date.now(), name: 'New Provider', url: 'https://', icon: '' }])}
+                      className="bg-white/5 hover:bg-white/10 text-white px-6 py-3 rounded-2xl text-sm font-bold transition-all"
+                    >
+                       Add Provider
+                    </button>
+                    
+                    <button onClick={saveProviders} className="flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-500 text-white px-8 py-3.5 rounded-2xl text-sm font-bold shadow-[0_0_20px_-5px_rgba(244,63,94,0.4)] transition-all">
+                      <Save className="w-4 h-4" /> Save Providers
+                    </button>
                   </div>
                 </div>
               )}

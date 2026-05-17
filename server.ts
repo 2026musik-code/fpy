@@ -26,6 +26,16 @@ let adminData = {
     { provider: 'netshort', views: 856 },
     { provider: 'vivid', views: 432 }
   ],
+  providers: [
+    { id: 'netshort', name: 'NetShort', url: 'https://www.netshort.com' },
+    { id: 'reelshort', name: 'ReelShort', url: 'https://www.reelshort.com' },
+    { id: 'freereels', name: 'FreeReels', url: 'https://www.freereels.com' },
+    { id: 'goodshort', name: 'GoodShort', url: 'https://goodshort.com' },
+    { id: 'dotdrama', name: 'DotDrama', url: 'https://www.dotdrama.com', icon: 'https://ui-avatars.com/api/?name=Dot+Drama&background=4f46e5&color=fff&size=128' },
+    { id: 'stardusttv', name: 'StarDustTV', url: 'https://www.stardusttv.com', icon: 'https://ui-avatars.com/api/?name=Star+Dust+TV&background=f59e0b&color=fff&size=128' },
+    { id: 'meloshort', name: 'MeloShort', url: 'https://www.meloshort.com', icon: 'https://ui-avatars.com/api/?name=Melo+Short&background=ec4899&color=fff&size=128' },
+    { id: 'dramabite', name: 'DramaBite', url: 'https://www.dramabite.com', icon: 'https://ui-avatars.com/api/?name=Drama+Bite&background=10b981&color=fff&size=128' }
+  ],
   upgrade: {
     description: 'Upgrade ke VIP untuk akses tanpa batas tayangan premium',
     price: 'Rp 50.000 / Bulan',
@@ -116,6 +126,19 @@ async function startServer() {
       return res.status(401).json({ error: 'Unauthorized', message: 'Invalid admin credentials' });
     }
     next();
+  });
+
+  app.get("/api/providers", (req, res) => {
+    res.json({ success: true, providers: adminData.providers });
+  });
+
+  app.post("/api/admin/update-providers", (req, res) => {
+    if (req.body && Array.isArray(req.body.providers)) {
+      adminData.providers = req.body.providers;
+      res.json({ success: true, providers: adminData.providers });
+    } else {
+      res.status(400).json({ success: false, error: 'Invalid providers payload' });
+    }
   });
 
   app.get("/api/admin/data", (req, res) => {

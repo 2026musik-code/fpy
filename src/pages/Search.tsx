@@ -6,10 +6,15 @@ import { motion } from 'motion/react';
 
 export function Search() {
   const [query, setQuery] = useState('');
+  const [providers, setProviders] = useState(PROVIDERS);
   const [provider, setProvider] = useState(fypApi.getProvider() || PROVIDERS[0].id);
   const [results, setResults] = useState<Drama[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+
+  useEffect(() => {
+    fypApi.loadProviders().then(p => setProviders([...p]));
+  }, []);
 
   const handleSearch = async (e?: FormEvent) => {
     if (e) e.preventDefault();
@@ -85,7 +90,7 @@ export function Search() {
               onChange={(e) => setProvider(e.target.value)}
               className="appearance-none relative block w-full pl-5 pr-10 py-4 md:py-5 bg-zinc-900/80 backdrop-blur-xl border border-white/10 rounded-2xl text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-rose-500/50 focus:border-rose-500 transition-all shadow-inner cursor-pointer font-medium"
             >
-              {PROVIDERS.map(p => (
+              {providers.map(p => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>
@@ -134,7 +139,7 @@ export function Search() {
                   
                   {drama.provider && (
                     <div className="absolute top-3 right-3 z-20 px-2.5 py-1 bg-black/60 backdrop-blur-md rounded-lg text-[10px] font-bold text-rose-400 uppercase tracking-widest backdrop-saturate-150 border border-rose-500/30">
-                      {PROVIDERS.find(p => p.id === drama.provider)?.name || drama.provider}
+                      {providers.find(p => p.id === drama.provider)?.name || drama.provider}
                     </div>
                   )}
 
