@@ -605,16 +605,40 @@ function VideoItem({ episode, isActive, onEnded }: { key?: string | number; epis
               </div>
             )}
             {originalUrl && (
-              <a 
-                href={originalUrl} 
-                target="_blank" 
-                rel="noreferrer"
+              <button 
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  alert("Catatan: Video dan Subtitle (jika ada) akan diunduh secara terpisah. Anda mungkin perlu menggunakan pemutar video seperti VLC atau MX Player untuk memutar video dengan subtitle.");
+                  
+                  // Unduh subtitle
+                  if (activeSubId !== -1 && subtitles[activeSubId]) {
+                    try {
+                      const sub = subtitles[activeSubId];
+                      const res = await fetch(sub.url);
+                      const blob = await res.blob();
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `${episode.title || 'Episode'}_${sub.label || 'Sub'}.vtt`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                    } catch (err) {
+                      console.error("Failed to download subtitle", err);
+                    }
+                  }
+                  
+                  // Buka video (membuka tag baru biasanya tidak diblokir jika berurutan langsung dari klik,
+                  // namun karena ada alert() dan await fetch(), maka mungkin akan diblokir popup.
+                  // Lebih aman langsung menset window.open)
+                  window.open(originalUrl, '_blank', 'noopener,noreferrer');
+                }}
                 className="p-2 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md transition z-30 flex-shrink-0"
-                title="Download / Open source video"
-                onClick={e => e.stopPropagation()}
+                title="Download Video & Subtitle"
               >
                 <Download className="w-5 h-5 text-white" />
-              </a>
+              </button>
             )}
           </div>
         </div>
