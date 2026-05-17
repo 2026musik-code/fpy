@@ -117,7 +117,6 @@ export function DramaPlayer() {
             key={ep.id || idx}
             episode={ep} 
             isActive={idx === activeIdx} 
-            isAdjacent={Math.abs(idx - activeIdx) <= 1}
             onEnded={() => {
               if (idx < episodes.length - 1) {
                 scrollToIdx(idx + 1);
@@ -198,7 +197,7 @@ export function DramaPlayer() {
   );
 }
 
-function VideoItem({ episode, isActive, isAdjacent, onEnded }: { key?: string | number; episode: Episode, isActive: boolean, isAdjacent: boolean, onEnded?: () => void }) {
+function VideoItem({ episode, isActive, onEnded }: { key?: string | number; episode: Episode, isActive: boolean, onEnded?: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(isActive);
   const [isBuffering, setIsBuffering] = useState(false);
@@ -272,7 +271,7 @@ function VideoItem({ episode, isActive, isAdjacent, onEnded }: { key?: string | 
     }
   }, [isActive, streamUrl, episode, limitData]);
 
-  // Cleanup old data when scrolling away
+  // Hapus data lama ketika tidak aktif (scroll pergi)
   useEffect(() => {
     if (!isActive && streamUrl) {
       setStreamUrl(undefined);
@@ -313,7 +312,7 @@ function VideoItem({ episode, isActive, isAdjacent, onEnded }: { key?: string | 
 
   // Hls.js initialization
   useEffect(() => {
-    if (!isAdjacent || !streamUrl || !videoRef.current) return;
+    if (!isActive || !streamUrl || !videoRef.current) return;
 
     let hls: Hls | null = null;
     const video = videoRef.current;
@@ -344,6 +343,13 @@ function VideoItem({ episode, isActive, isAdjacent, onEnded }: { key?: string | 
                 hls?.destroy();
                 break;
             }
+          } else {
+             if (data.details === Hls.ErrorDetails.BUFFER_STALLED_ERROR) {
+                console.log("Buffer stalled, attempting to recover...");
+                if (videoRef.current) {
+                   videoRef.current.currentTime += 0.1;
+                }
+             }
           }
         });
 
@@ -377,7 +383,7 @@ function VideoItem({ episode, isActive, isAdjacent, onEnded }: { key?: string | 
         video.load();
       }
     };
-  }, [isAdjacent, streamUrl, playVideo]);
+  }, [isActive, streamUrl, playVideo]);
 
   useEffect(() => {
     if (isActive) {
@@ -460,11 +466,11 @@ function VideoItem({ episode, isActive, isAdjacent, onEnded }: { key?: string | 
   return (
     <div className="h-full w-full flex-shrink-0 snap-start snap-always relative bg-black group" onClick={togglePlay}>
       {/* Cover image or placeholder if outside render distance */}
-      {!isAdjacent && episode.cover && (
+      {!isActive && episode.cover && (
         <img src={episode.cover} className="w-full h-full object-cover opacity-50" alt="" referrerPolicy="no-referrer" loading="lazy" />
       )}
       
-      {isAdjacent && (
+      {isActive && (
         <video
           ref={videoRef}
           crossOrigin="anonymous"
