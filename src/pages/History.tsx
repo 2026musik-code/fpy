@@ -67,7 +67,7 @@ export function History() {
           variants={containerVariants}
           initial="hidden"
           animate="show"
-          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6 lg:gap-8"
+          className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 md:gap-6 lg:gap-8"
         >
           {history.map((drama, i) => (
             <motion.div variants={itemVariants} key={`${drama.id}_${i}`}>
@@ -108,10 +108,10 @@ export function History() {
                   )}
                 </div>
                 <div className="px-1 mt-1">
-                  <h3 className="font-semibold text-sm md:text-base leading-snug group-hover:text-rose-400 transition-colors duration-300 line-clamp-2 text-zinc-200">
+                  <h3 className="font-semibold text-xs md:text-sm lg:text-base leading-snug group-hover:text-rose-400 transition-colors duration-300 line-clamp-2 text-zinc-200">
                     {drama.title}
                   </h3>
-                  <p className="text-[11px] font-medium text-zinc-500 mt-1.5 uppercase tracking-widest">
+                  <p className="text-[10px] md:text-[11px] font-medium text-zinc-500 mt-1 uppercase tracking-widest">
                     {new Date(drama.lastWatchedAt).toLocaleDateString()}
                   </p>
                 </div>

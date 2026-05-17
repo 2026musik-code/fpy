@@ -115,7 +115,7 @@ export function Search() {
           variants={containerVariants}
           initial="hidden"
           animate="show"
-          className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6 lg:gap-8"
+          className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 md:gap-6 lg:gap-8"
         >
           {results.map((drama, i) => (
             <motion.div variants={itemVariants} key={`${drama.id || drama.videoFakeId || 'drama'}-${i}`}>
@@ -145,7 +145,7 @@ export function Search() {
                   </div>
                 </div>
                 <div className="px-1 mt-1">
-                  <h3 className="font-semibold text-sm md:text-base leading-snug line-clamp-2 text-zinc-200 group-hover:text-rose-400 transition-colors duration-300">
+                  <h3 className="font-semibold text-xs md:text-sm lg:text-base leading-snug line-clamp-2 text-zinc-200 group-hover:text-rose-400 transition-colors duration-300">
                     {drama.title}
                   </h3>
                 </div>
