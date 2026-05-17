@@ -214,6 +214,7 @@ function VideoItem({ episode, isActive, isAdjacent, onEnded }: { key?: string | 
   const timerRef = useRef<NodeJS.Timeout>();
   const playPromiseRef = useRef<Promise<void> | null>(null);
   const isActiveRef = useRef(isActive);
+  const hlsRef = useRef<Hls | null>(null);
 
   useEffect(() => {
     isActiveRef.current = isActive;
@@ -239,22 +240,26 @@ function VideoItem({ episode, isActive, isAdjacent, onEnded }: { key?: string | 
       const fetchUrl = async () => {
         const id = episode.videoFakeId || episode.id || episode.fakeId;
         if (id) {
-          const streamData = await fypApi.getStream(id);
-          if (streamData && streamData.limitReached) {
-             setLimitData(streamData.data);
-          } else if (streamData && streamData.url) {
-            setStreamUrl(streamData.url);
-            setOriginalUrl(streamData.originalUrl);
-            setSubtitles(streamData.subtitles || []);
-            
-            // Set default subtitle
-            const subs = streamData.subtitles || [];
-            if (subs.length > 0) {
-              let idx = subs.findIndex((s: any) => s.label === "Indonesia" || s.lang === "id-ID" || s.label?.toLowerCase() === "indonesian");
-              setActiveSubId(idx !== -1 ? idx : 0);
+          try {
+            const streamData = await fypApi.getStream(id);
+            if (streamData && streamData.limitReached) {
+               setLimitData(streamData.data);
+            } else if (streamData && streamData.url) {
+              setStreamUrl(streamData.url);
+              setOriginalUrl(streamData.originalUrl);
+              setSubtitles(streamData.subtitles || []);
+              
+              // Set default subtitle
+              const subs = streamData.subtitles || [];
+              if (subs.length > 0) {
+                let idx = subs.findIndex((s: any) => s.label === "Indonesia" || s.lang === "id-ID" || s.label?.toLowerCase() === "indonesian");
+                setActiveSubId(idx !== -1 ? idx : 0);
+              }
+            } else if (typeof streamData === 'string') {
+              setStreamUrl(streamData);
             }
-          } else if (typeof streamData === 'string') {
-            setStreamUrl(streamData);
+          } catch (e) {
+            console.error("Error fetching stream:", e);
           }
         }
       };
@@ -303,10 +308,12 @@ function VideoItem({ episode, isActive, isAdjacent, onEnded }: { key?: string | 
       if (Hls.isSupported()) {
         hls = new Hls({
           startPosition: -1,
+          autoStartLoad: false, // Prevent loading until active to avoid network limit
           maxBufferLength: 30, // reduce buffer size for faster start / less fetching initially
           maxMaxBufferLength: 60,
           lowLatencyMode: true // attempt faster start
         });
+        hlsRef.current = hls;
         
         hls.on(Hls.Events.ERROR, function (event, data) {
           if (data.fatal) {
@@ -327,39 +334,59 @@ function VideoItem({ episode, isActive, isAdjacent, onEnded }: { key?: string | 
         });
 
         hls.on(Hls.Events.MANIFEST_PARSED, function () {
-          playVideo();
+          if (isActiveRef.current) {
+             playVideo();
+          }
         });
 
         hls.loadSource(streamUrl);
         hls.attachMedia(video);
+        
+        if (isActiveRef.current) {
+           hls.startLoad();
+        }
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = streamUrl;
       }
     } else {
       video.src = streamUrl;
+      video.preload = isActiveRef.current ? "auto" : "none";
     }
 
     return () => {
       if (hls) {
         hls.destroy();
+        hlsRef.current = null;
+      }
+      if (video) {
+        video.removeAttribute('src');
+        video.load();
       }
     };
   }, [isAdjacent, streamUrl, playVideo]);
 
   useEffect(() => {
     if (isActive) {
+      if (hlsRef.current) {
+        hlsRef.current.startLoad();
+      } else if (videoRef.current && !streamUrl?.includes('.m3u')) {
+        videoRef.current.preload = "auto";
+      }
       playVideo();
       setIsPlaying(true);
       setShowControls(true);
       resetTimer(true);
     } else {
       pauseVideo();
+      if (hlsRef.current) {
+        hlsRef.current.stopLoad();
+      }
       if (videoRef.current) videoRef.current.currentTime = 0;
       setIsPlaying(false);
       setShowControls(false);
       clearTimeout(timerRef.current);
     }
-  }, [isActive, playVideo, pauseVideo]);
+  }, [isActive, playVideo, pauseVideo, streamUrl]);
   
   const handleCanPlay = () => {
     playVideo();
