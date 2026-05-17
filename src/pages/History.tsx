@@ -73,7 +73,7 @@ export function History() {
             <motion.div variants={itemVariants} key={`${drama.id}_${i}`}>
               <Link 
                 to={`/play/${drama.id}?provider=${drama.provider || fypApi.getProvider()}`}
-                className="group relative flex flex-col gap-3 h-full"
+                className="group relative flex flex-col gap-1.5 h-full"
               >
                 <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-zinc-900 border border-white/5 shadow-xl transition-all duration-500 group-hover:-translate-y-2 group-hover:shadow-[0_20px_40px_-15px_rgba(244,63,94,0.3)]">
                   {drama.cover ? (
@@ -107,8 +107,8 @@ export function History() {
                     </div>
                   )}
                 </div>
-                <div className="px-1 mt-1">
-                  <h3 className="font-semibold text-xs md:text-sm lg:text-base leading-snug group-hover:text-rose-400 transition-colors duration-300 line-clamp-2 text-zinc-200">
+                <div className="px-1 mt-0">
+                  <h3 className="font-bold text-xs md:text-sm lg:text-base leading-snug group-hover:text-rose-400 transition-colors duration-300 line-clamp-2 text-amber-400">
                     {drama.title}
                   </h3>
                   <p className="text-[10px] md:text-[11px] font-medium text-zinc-500 mt-1 uppercase tracking-widest">

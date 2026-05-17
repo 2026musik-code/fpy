@@ -121,7 +121,7 @@ export function Search() {
             <motion.div variants={itemVariants} key={`${drama.id || drama.videoFakeId || 'drama'}-${i}`}>
               <Link 
                 to={`/play/${drama.id || drama.videoFakeId}?provider=${drama.provider || provider}`}
-                className="group relative flex flex-col gap-3 h-full"
+                className="group relative flex flex-col gap-1.5 h-full"
               >
                 <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-zinc-900 border border-white/5 shadow-xl transition-all duration-500 group-hover:-translate-y-2 group-hover:shadow-[0_20px_40px_-15px_rgba(244,63,94,0.3)]">
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10 opacity-60 transition-opacity group-hover:opacity-80" />
@@ -139,17 +139,17 @@ export function Search() {
                   )}
 
                   <div className="absolute inset-0 z-20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="bg-rose-600/90 backdrop-blur text-white rounded-full p-4 transform scale-75 group-hover:scale-100 transition-all duration-300 shadow-2xl border border-rose-400/50">
-                      <Play className="fill-current w-6 h-6 ml-1" />
-                    </div>
+                  <div className="bg-rose-600/90 backdrop-blur text-white rounded-full p-4 transform scale-75 group-hover:scale-100 transition-all duration-300 shadow-2xl border border-rose-400/50">
+                    <Play className="fill-current w-6 h-6 ml-1" />
                   </div>
                 </div>
-                <div className="px-1 mt-1">
-                  <h3 className="font-semibold text-xs md:text-sm lg:text-base leading-snug line-clamp-2 text-zinc-200 group-hover:text-rose-400 transition-colors duration-300">
-                    {drama.title}
-                  </h3>
-                </div>
-              </Link>
+              </div>
+              <div className="px-1 mt-0">
+                <h3 className="font-bold text-xs md:text-sm lg:text-base leading-snug line-clamp-2 text-amber-400 group-hover:text-rose-400 transition-colors duration-300">
+                  {drama.title}
+                </h3>
+              </div>
+            </Link>
             </motion.div>
           ))}
         </motion.div>
