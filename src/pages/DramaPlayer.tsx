@@ -624,39 +624,50 @@ function VideoItem({ episode, isActive, onEnded }: { key?: string | number; epis
             )}
             {originalUrl && (
               <button 
-                onClick={async (e) => {
+                onClick={(e) => {
                   e.stopPropagation();
-                  alert("Catatan: Video dan Subtitle (jika ada) akan diunduh secara terpisah. Anda mungkin perlu menggunakan pemutar video seperti VLC atau MX Player untuk memutar video dengan subtitle.");
                   
-                  // Unduh subtitle
-                  if (activeSubId !== -1 && subtitles[activeSubId]) {
-                    try {
-                      const sub = subtitles[activeSubId];
-                      const res = await fetch(sub.url);
-                      const blob = await res.blob();
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = `${episode.title || 'Episode'}_${sub.label || 'Sub'}.vtt`;
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                      URL.revokeObjectURL(url);
-                    } catch (err) {
-                      console.error("Failed to download subtitle", err);
-                    }
-                  }
-                  
-                  // Buka video (membuka tag baru biasanya tidak diblokir jika berurutan langsung dari klik,
-                  // namun karena ada alert() dan await fetch(), maka mungkin akan diblokir popup.
-                  // Lebih aman langsung menset window.open)
+                  // Buka video secara sinkron agar tidak diblokir popup blocker
                   if (originalUrl.includes('.m3u8') || originalUrl.includes('.m3u')) {
-                    alert('Format video ini (M3U8) adalah format streaming yang terpisah-pisah. Browser tidak dapat mendownloadnya langsung menjadi file MP4. Kami telah menyalin link video ke Clipboard Anda, silakan gunakan aplikasi Downloader HLS / pihak ketiga seperti 1DM, IDM, atau VLC untuk mendownloadnya.');
+                    const fallbackCopy = () => {
+                      prompt('Format video ini (M3U8) adalah format streaming yang terpisah-pisah. Salin link di bawah ini lalu gunakan aplikasi Downloader HLS (seperti 1DM, IDM, atau VLC) untuk mendownloadnya:', originalUrl);
+                    };
                     try {
-                      navigator.clipboard.writeText(originalUrl);
-                    } catch (e) {}
+                      if (navigator.clipboard) {
+                        navigator.clipboard.writeText(originalUrl).then(() => {
+                          alert('Link video m3u8 BERHASIL disalin ke Clipboard! Silakan tempelkan (paste) link tersebut di aplikasi Downloader HLS (1DM/IDM/VLC) untuk mendownload.');
+                        }).catch(() => {
+                           fallbackCopy();
+                        });
+                      } else {
+                        fallbackCopy();
+                      }
+                    } catch (e) {
+                      fallbackCopy();
+                    }
                   } else {
                     window.open(originalUrl, '_blank', 'noopener,noreferrer');
+                  }
+                  
+                  // Unduh subtitle secara asinkron di belakang
+                  if (activeSubId !== -1 && subtitles[activeSubId]) {
+                    setTimeout(async () => {
+                      try {
+                        const sub = subtitles[activeSubId];
+                        const res = await fetch(sub.url);
+                        const blob = await res.blob();
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `${episode.title || 'Episode'}_${sub.label || 'Sub'}.vtt`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                      } catch (err) {
+                        console.error("Failed to download subtitle", err);
+                      }
+                    }, 500);
                   }
                 }}
                 className="p-2 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md transition z-30 flex-shrink-0"
