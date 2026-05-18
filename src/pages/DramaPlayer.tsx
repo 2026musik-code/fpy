@@ -36,16 +36,19 @@ export function DramaPlayer() {
       setEpisodes(data.sort((a: any, b: any) => (a.sort || 0) - (b.sort || 0)));
       setLoading(false);
       
+      let savedIdx = 0;
       if (data.length > 0) {
-        // Find best cover and title
-        const dbEntry = data.find(it => it.cover) || data[0];
-        historyStore.add({
-          id,
-          title: dbEntry.title || `Drama ${id}`,
-          cover: dbEntry.cover || '',
-          provider: providerParam || fypApi.getProvider(),
-          episodesCount: data.length
-        });
+        const historyData = historyStore.get().find(h => h.id === id);
+        if (historyData && historyData.lastWatchedEpisode) {
+           savedIdx = historyData.lastWatchedEpisode;
+           // validate bounds
+           if (savedIdx >= data.length) savedIdx = 0;
+        }
+
+        if (savedIdx > 0) {
+          setActiveIdx(savedIdx);
+          setTimeout(() => scrollToIdx(savedIdx), 100);
+        }
       }
     }).catch(err => {
       console.error(err);
@@ -76,6 +79,21 @@ export function DramaPlayer() {
       }
     }, 150);
   }, [activeIdx]);
+
+  useEffect(() => {
+    // Update history with new episode whenever activeIdx or episodes change (after loading)
+    if (id && episodes.length > 0 && activeIdx >= 0 && activeIdx < episodes.length) {
+       const dbEntry = episodes.find(it => it.cover) || episodes[0];
+       historyStore.add({
+         id,
+         title: dbEntry.title || `Drama ${id}`,
+         cover: dbEntry.cover || '',
+         provider: providerParam || fypApi.getProvider(),
+         episodesCount: episodes.length,
+         lastWatchedEpisode: activeIdx
+       });
+    }
+  }, [activeIdx, episodes, id, providerParam]);
 
   useEffect(() => {
     return () => {

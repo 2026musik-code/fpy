@@ -2,6 +2,7 @@ import { Drama } from '../services/api';
 
 export interface HistoryItem extends Drama {
   lastWatchedAt: number;
+  lastWatchedEpisode?: number;
 }
 
 const HISTORY_KEY = 'fypshort_history';
@@ -10,7 +11,8 @@ export const historyStore = {
   get: (): HistoryItem[] => {
     try {
       const data = localStorage.getItem(HISTORY_KEY);
-      return data ? JSON.parse(data) : [];
+      const parsed = data ? JSON.parse(data) : [];
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
       return [];
     }

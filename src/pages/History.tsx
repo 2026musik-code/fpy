@@ -63,14 +63,11 @@ export function History() {
       </motion.div>
 
       {history.length > 0 ? (
-        <motion.div 
-          variants={containerVariants}
-          initial="hidden"
-          animate="show"
+        <div 
           className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 md:gap-6 lg:gap-8"
         >
           {history.map((drama, i) => (
-            <motion.div variants={itemVariants} key={`${drama.id}_${i}`}>
+            <div key={`${drama.id}_${i}`}>
               <Link 
                 to={`/play/${drama.id}?provider=${drama.provider || fypApi.getProvider()}`}
                 className="group relative flex flex-col gap-1.5 h-full"
@@ -116,9 +113,9 @@ export function History() {
                   </p>
                 </div>
               </Link>
-            </motion.div>
+            </div>
           ))}
-        </motion.div>
+        </div>
       ) : (
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
