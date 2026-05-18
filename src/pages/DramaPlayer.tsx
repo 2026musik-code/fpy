@@ -632,7 +632,14 @@ function VideoItem({ episode, isActive, onEnded }: { key?: string | number; epis
                   // Buka video (membuka tag baru biasanya tidak diblokir jika berurutan langsung dari klik,
                   // namun karena ada alert() dan await fetch(), maka mungkin akan diblokir popup.
                   // Lebih aman langsung menset window.open)
-                  window.open(originalUrl, '_blank', 'noopener,noreferrer');
+                  if (originalUrl.includes('.m3u8') || originalUrl.includes('.m3u')) {
+                    alert('Format video ini (M3U8) adalah format streaming yang terpisah-pisah. Browser tidak dapat mendownloadnya langsung menjadi file MP4. Kami telah menyalin link video ke Clipboard Anda, silakan gunakan aplikasi Downloader HLS / pihak ketiga seperti 1DM, IDM, atau VLC untuk mendownloadnya.');
+                    try {
+                      navigator.clipboard.writeText(originalUrl);
+                    } catch (e) {}
+                  } else {
+                    window.open(originalUrl, '_blank', 'noopener,noreferrer');
+                  }
                 }}
                 className="p-2 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-md transition z-30 flex-shrink-0"
                 title="Download Video & Subtitle"
