@@ -12,7 +12,14 @@ export function Home() {
   const [activeProvider, setActiveProvider] = useState(fypApi.getProvider());
 
   useEffect(() => {
-    fypApi.loadProviders().then(p => setProviders([...p]));
+    const load = () => fypApi.loadProviders().then(p => setProviders([...p]));
+    load();
+    const handleProviderChanged = () => {
+      setActiveProvider(fypApi.getProvider());
+      load();
+    };
+    window.addEventListener('provider-changed', handleProviderChanged);
+    return () => window.removeEventListener('provider-changed', handleProviderChanged);
   }, []);
 
   useEffect(() => {

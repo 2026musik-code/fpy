@@ -13,7 +13,18 @@ export function Search() {
   const [hasSearched, setHasSearched] = useState(false);
 
   useEffect(() => {
-    fypApi.loadProviders().then(p => setProviders([...p]));
+    const load = () => fypApi.loadProviders().then(p => {
+      setProviders([...p]);
+      if (!fypApi.getProvider() && p.length > 0) setProvider(p[0].id);
+    });
+    load();
+    const handleProviderChanged = () => {
+      const p = fypApi.getProvider();
+      if (p) setProvider(p);
+      load();
+    };
+    window.addEventListener('provider-changed', handleProviderChanged);
+    return () => window.removeEventListener('provider-changed', handleProviderChanged);
   }, []);
 
   const handleSearch = async (e?: FormEvent) => {
